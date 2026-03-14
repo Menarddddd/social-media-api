@@ -1,8 +1,9 @@
 import uuid
-from uuid import UUID
 from typing import TYPE_CHECKING
+from datetime import datetime, timezone
 
 import sqlalchemy as sa
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -13,17 +14,39 @@ if TYPE_CHECKING:
     from app.models.refresh_token import RefreshToken
 
 
+class UserDeletion(Base):
+    __tablename__ = "user_deletions"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        sa.ForeignKey("users.id"), nullable=False
+    )
+    reason: Mapped[str | None] = mapped_column(sa.String(200), nullable=True)
+    deleted_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    user: Mapped["User"] = relationship("User", back_populates="user_deletions")
+
+
 class User(Base):
     __tablename__ = "users"
 
-    id: Mapped[UUID] = mapped_column(
-        sa.UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     first_name: Mapped[str] = mapped_column(sa.String(100), nullable=False)
     last_name: Mapped[str] = mapped_column(sa.String(100), nullable=False)
     username: Mapped[str] = mapped_column(sa.String(200), unique=True, nullable=False)
     email: Mapped[str] = mapped_column(sa.String(200), unique=True, nullable=False)
     password: Mapped[str] = mapped_column(sa.String(200), nullable=False)
+    is_deleted: Mapped[bool] = mapped_column(
+        sa.Boolean, default=False, server_default=sa.false(), nullable=False
+    )
 
     posts: Mapped[list["Post"]] = relationship(
         "Post", back_populates="author", cascade="all, delete-orphan"
@@ -33,4 +56,7 @@ class User(Base):
     )
     refresh_tokens: Mapped[list["RefreshToken"]] = relationship(
         "RefreshToken", back_populates="user", cascade="all, delete-orphan"
+    )
+    user_deletions: Mapped[list["UserDeletion"]] = relationship(
+        "UserDeletion", back_populates="user", cascade="all, delete-orphan"
     )

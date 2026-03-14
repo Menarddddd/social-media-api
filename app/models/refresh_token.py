@@ -1,9 +1,9 @@
 import uuid
-from uuid import UUID
 from typing import TYPE_CHECKING
 from datetime import datetime, timedelta, timezone
 
 import sqlalchemy as sa
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -16,10 +16,10 @@ if TYPE_CHECKING:
 class RefreshToken(Base):
     __tablename__ = "refresh_tokens"
 
-    id: Mapped[UUID] = mapped_column(
-        sa.UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    user_id: Mapped[UUID] = mapped_column(
+    user_id: Mapped[uuid.UUID] = mapped_column(
         sa.ForeignKey("users.id"), nullable=False, index=True
     )
     hashed_token: Mapped[str] = mapped_column(
