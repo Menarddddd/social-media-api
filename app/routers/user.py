@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.dependency import get_current_user
 from app.models.user import User
+from app.repositories.user import get_all_active_users_db
 from app.schemas.user import (
     UserCreate,
     UserResponse,
@@ -42,13 +43,29 @@ async def create_user(
     return await create_user_service(form_data, db)
 
 
+@router.get("/profile", response_model=UserResponse, status_code=status.HTTP_200_OK)
+async def my_profile(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    return current_user
+
+
+@router.delete("", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_user(
+    user_id: UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    await db.delete(User.id == user_id)
+
+
 @router.get("", response_model=list[UserResponse], status_code=status.HTTP_200_OK)
 async def get_users(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
-    result = await db.execute(select(User))
-    return result.scalars().all()
+    return await get_all_active_users_db(db)
 
 
 @router.get("/{user_id}", response_model=UserResponse, status_code=status.HTTP_200_OK)

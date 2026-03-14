@@ -23,7 +23,9 @@ class UserDeletion(Base):
     user_id: Mapped[uuid.UUID] = mapped_column(
         sa.ForeignKey("users.id"), nullable=False
     )
-    reason: Mapped[str | None] = mapped_column(sa.String(200), nullable=True)
+    reason: Mapped[str | None] = mapped_column(
+        sa.String(200), default=None, nullable=True
+    )
     deleted_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -59,4 +61,9 @@ class User(Base):
     )
     user_deletions: Mapped[list["UserDeletion"]] = relationship(
         "UserDeletion", back_populates="user", cascade="all, delete-orphan"
+    )
+
+    __table_args__ = (
+        sa.UniqueConstraint("username", name="uq_users_username"),
+        sa.UniqueConstraint("email", name="uq_users_email"),
     )

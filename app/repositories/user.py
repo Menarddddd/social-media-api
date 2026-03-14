@@ -23,3 +23,9 @@ async def get_active_user_by_id_db(user_id: UUID, db: AsyncSession, *options):
 
 async def get_active_user_by_username_db(username: str, db: AsyncSession, *options):
     return await _get_active_user_db(User.username == username, db, *options)
+
+
+async def get_all_active_users_db(db: AsyncSession):
+    result = await db.execute(select(User).where(User.is_deleted.is_(False)))
+
+    return result.scalars().all()

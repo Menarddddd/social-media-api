@@ -1,12 +1,28 @@
 from uuid import UUID
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import create_access_token, hash_password, verify_password
-from app.exceptions.exception import CredentialsException, FieldNotFoundException
+from app.core.security import (
+    create_access_token,
+    create_refresh_token,
+    hash_password,
+    verify_password,
+)
+from app.core.utils import parse_user_info
+from app.exceptions.exception import (
+    CredentialsException,
+    DuplicateEntryException,
+    FieldNotFoundException,
+    get_unique_constraint_name,
+    raise_duplicate_from_integrity_error,
+)
 from app.models.user import User, UserDeletion
+from app.repositories.user import get_active_user_by_id_db
 from app.schemas.user import UserCreate, UserUpdate
+
+UPDATE_USER_ALLOWED = {"first_name", "last_name", "username", "email"}
 
 
 async def login_service(username: str, password: str, db: AsyncSession) -> dict:
@@ -20,20 +36,35 @@ async def login_service(username: str, password: str, db: AsyncSession) -> dict:
         raise CredentialsException("Username or password is incorrect")
 
     access_token = create_access_token({"sub": str(user.id)})
+    refresh_token = create_refresh_token({"sub": str(user.id)})
 
-    return {"access_token": access_token, "token_type": "Bearer", "refersh_token": ""}
+    return {
+        "access_token": access_token,
+        "token_type": "Bearer",
+        "refersh_token": refresh_token,
+    }
 
 
 async def create_user_service(form_data: UserCreate, db: AsyncSession) -> dict:
+    data = parse_user_info(form_data.model_dump())
+
     user = User(
-        first_name=form_data.first_name,
-        last_name=form_data.last_name,
-        username=form_data.username,
-        email=form_data.email,
-        password=hash_password(form_data.password),
+        first_name=data["first_name"],
+        last_name=data["last_name"],
+        username=data["username"],
+        email=data["email"],
+        password=hash_password(data["password"]),
     )
 
-    db.add(user)
+    try:
+        db.add(user)
+        await db.flush()
+
+    except IntegrityError as e:
+        raise_duplicate_from_integrity_error(
+            e, {"username": user.username, "email": user.email}
+        )
+        raise  # unkown error
 
     return {
         "message": "You've successfully created your account. You can now login with it"
@@ -41,21 +72,38 @@ async def create_user_service(form_data: UserCreate, db: AsyncSession) -> dict:
 
 
 async def get_user_service(user_id: UUID, db: AsyncSession) -> User | None:
-    result = await db.execute(select(User).where(User.id == user_id))
-    return result.scalar_one_or_none()
+    user = await get_active_user_by_id_db(user_id, db)
+    if not user:
+        raise FieldNotFoundException("user", str(user_id))
+
+    return user
 
 
 async def update_profile_service(
     form_data: UserUpdate, current_user: User, db: AsyncSession
 ) -> User:
+
     data = form_data.model_dump(
         exclude_unset=True
     )  # converts pydantic to a dict, exclude unset
 
-    for key, val in data.items():
-        setattr(current_user, key, val)
+    data = parse_user_info(data)  # clean user info input
 
-    await db.flush()  # raise constraint error
+    data = {
+        k: v for k, v in data.items() if k in UPDATE_USER_ALLOWED
+    }  # checks allowed field
+
+    try:
+        for key, val in data.items():
+            setattr(current_user, key, val)
+
+        await db.flush()  # raise constraint error
+
+    except IntegrityError as e:
+        raise_duplicate_from_integrity_error(
+            e, {"username": data.get("username"), "email": data.get("email")}
+        )
+        raise  # not know error
 
     return current_user
 
