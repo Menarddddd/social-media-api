@@ -47,6 +47,8 @@ class UserResponse(UserBase):
 
 
 class UserUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     first_name: str | None = None
     last_name: str | None = None
     username: str | None = None

@@ -18,6 +18,7 @@ from app.exceptions.handler import (
     field_not_found_exception_handler,
 )
 from app.routers.user import router as user_router
+from app.routers.post import router as post_router
 
 
 @asynccontextmanager
@@ -32,6 +33,7 @@ async def lifespan(app: FastAPI):
 
 def register_routers(app: FastAPI):
     app.include_router(user_router, prefix="/api/users", tags=["users"])
+    app.include_router(post_router, prefix="/api/posts", tags=["posts"])
 
 
 def register_exception_handlers(app: FastAPI):
