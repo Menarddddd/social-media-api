@@ -13,6 +13,7 @@ from app.core.database import get_db
 from app.core.settings import settings
 from app.exceptions.exception import FieldNotFoundException
 from app.models.user import User
+from app.repositories.comment import get_comment_by_id_db
 from app.repositories.post import get_post_by_id_db
 from app.repositories.user import get_active_user_by_id_db
 
@@ -82,3 +83,21 @@ async def post_owner(
         )
 
     return post
+
+
+async def comment_owner(
+    comment_id: UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    comment = await get_comment_by_id_db(comment_id, db)
+    if not comment:
+        raise FieldNotFoundException("comment", str(comment_id))
+
+    if comment.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="You do not own this comment to modify it",
+        )
+
+    return comment

@@ -30,10 +30,12 @@ class PostResponse(PostBase):
 
 
 class ProfileResponse(PostBase):
+    id: UUID
     comments: list[CommentPublic]
 
 
 class FeedResponse(PostBase):
+    id: UUID
     author: UserPublic
     comments: list[CommentPublic]
 

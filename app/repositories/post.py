@@ -19,11 +19,13 @@ async def get_post_by_id_db(post_id: UUID, db: AsyncSession, *options) -> Post |
     return result.scalar_one_or_none()
 
 
-async def get_user_posts_db(user: User, db: AsyncSession, *options) -> Sequence[Post]:
+async def get_user_posts_db(
+    user_id: UUID, db: AsyncSession, *options
+) -> Sequence[Post]:
     stmt = (
         select(Post)
         .join(User)
-        .where(Post.user_id == user.id, User.is_deleted.is_(False))
+        .where(Post.user_id == user_id, User.is_deleted.is_(False))
         .order_by(Post.date_created.desc())
     )
 

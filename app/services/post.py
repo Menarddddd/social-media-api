@@ -40,7 +40,7 @@ async def feed_service(db: AsyncSession):
 
 async def my_posts_service(current_user: User, db: AsyncSession) -> Sequence[Post]:
     posts = await get_user_posts_db(
-        current_user, db, selectinload(Post.comments).selectinload(Comment.author)
+        current_user.id, db, selectinload(Post.comments).selectinload(Comment.author)
     )
 
     return posts
