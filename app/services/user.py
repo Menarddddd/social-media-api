@@ -13,14 +13,12 @@ from app.core.security import (
 from app.core.utils import parse_user_info
 from app.exceptions.exception import (
     CredentialsException,
-    DuplicateEntryException,
     FieldNotFoundException,
-    get_unique_constraint_name,
     raise_duplicate_from_integrity_error,
 )
 from app.models.user import User, UserDeletion
 from app.repositories.user import get_active_user_by_id_db
-from app.schemas.user import UserCreate, UserUpdate
+from app.schemas.user import ChangePassword, UserCreate, UserUpdate
 
 UPDATE_USER_ALLOWED = {"first_name", "last_name", "username", "email"}
 
@@ -106,6 +104,15 @@ async def update_profile_service(
         raise  # not know error
 
     return current_user
+
+
+async def change_password_service(form_data: ChangePassword, current_user: User):
+    if not verify_password(form_data.current_password, current_user.password):
+        raise CredentialsException("Invalid credentials")
+
+    current_user.password = hash_password(form_data.new_password)
+
+    return {"message": "You've successfully changed your password"}
 
 
 async def delete_profile_service(

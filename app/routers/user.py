@@ -12,12 +12,14 @@ from app.core.dependency import get_current_user
 from app.models.user import User
 from app.repositories.user import get_all_active_users_db
 from app.schemas.user import (
+    ChangePassword,
     UserCreate,
     UserResponse,
     UserUpdate,
     UserDeletion,
 )
 from app.services.user import (
+    change_password_service,
     create_user_service,
     delete_profile_service,
     get_user_service,
@@ -84,6 +86,15 @@ async def update_profile(
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
     return await update_profile_service(form_data, current_user, db)
+
+
+@router.patch("/change_password", status_code=status.HTTP_200_OK)
+async def change_password(
+    form_data: ChangePassword,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    return await change_password_service(form_data, current_user)
 
 
 @router.post("/delete", status_code=status.HTTP_204_NO_CONTENT)

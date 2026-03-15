@@ -2,6 +2,7 @@ from fastapi import Request, status
 from fastapi.responses import JSONResponse
 
 from app.exceptions.exception import (
+    BadRequestException,
     FieldNotFoundException,
     DuplicateEntryException,
     CredentialsException,
@@ -32,4 +33,12 @@ def credentials_exception_handler(request: Request, exc: Exception) -> JSONRespo
     return JSONResponse(
         status_code=status.HTTP_401_UNAUTHORIZED,
         content={"message": exc.error},
+    )
+
+
+def bad_request_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    assert isinstance(exc, BadRequestException)
+
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST, content={"message": exc.message}
     )

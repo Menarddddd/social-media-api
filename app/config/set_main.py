@@ -3,14 +3,16 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.core.database import Base, engine
-from app import models
+from app import models  # loads model
 
 from app.exceptions.exception import (
+    BadRequestException,
     CredentialsException,
     DuplicateEntryException,
     FieldNotFoundException,
 )
 from app.exceptions.handler import (
+    bad_request_exception_handler,
     credentials_exception_handler,
     duplicate_entry_exception_handler,
     field_not_found_exception_handler,
@@ -38,3 +40,4 @@ def register_exception_handlers(app: FastAPI):
         DuplicateEntryException, duplicate_entry_exception_handler
     )
     app.add_exception_handler(CredentialsException, credentials_exception_handler)
+    app.add_exception_handler(BadRequestException, bad_request_exception_handler)

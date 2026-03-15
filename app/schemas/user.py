@@ -1,5 +1,7 @@
 from uuid import UUID
-from pydantic import BaseModel, ConfigDict, Field, EmailStr
+from pydantic import BaseModel, ConfigDict, Field, EmailStr, model_validator
+
+from app.exceptions.exception import BadRequestException
 
 
 class Token(BaseModel):
@@ -11,6 +13,20 @@ class Token(BaseModel):
 class UserDeletion(BaseModel):
     password: str
     reason: str | None = Field(default=None, max_length=200)
+
+
+class ChangePassword(BaseModel):
+    current_password: str = Field(min_length=1, max_length=200)
+    new_password: str = Field(min_length=1, max_length=200)
+
+    @model_validator(mode="after")
+    def validate_password(self):
+        if self.current_password == self.new_password:
+            raise BadRequestException(
+                "New password must be different from your current password"
+            )
+
+        return self
 
 
 class UserBase(BaseModel):

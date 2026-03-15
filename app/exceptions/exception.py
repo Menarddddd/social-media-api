@@ -3,6 +3,11 @@ from typing import Mapping
 from sqlalchemy.exc import IntegrityError
 
 
+class BadRequestException(Exception):
+    def __init__(self, message):
+        self.message = message
+
+
 class CredentialsException(Exception):
     def __init__(self, error):
         self.error = error
