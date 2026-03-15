@@ -53,3 +53,33 @@ class UserUpdate(BaseModel):
     last_name: str | None = None
     username: str | None = None
     email: str | None = None
+
+
+class UserPublic(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    first_name: str
+    last_name: str
+
+
+class PostPublic(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    title: str
+    content: str
+    author: UserPublic
+
+
+class CommentPublic(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    message: str
+    post: PostPublic
+
+
+class UserActivity(BaseModel):
+    posts: list[PostPublic]
+    comments: list[CommentPublic]

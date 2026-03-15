@@ -3,6 +3,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.security import (
     create_access_token,
@@ -16,7 +17,11 @@ from app.exceptions.exception import (
     FieldNotFoundException,
     raise_duplicate_from_integrity_error,
 )
+from app.models.comment import Comment
+from app.models.post import Post
 from app.models.user import User, UserDeletion
+from app.repositories.comment import get_all_comments_db
+from app.repositories.post import get_user_posts_db
 from app.repositories.user import get_active_user_by_id_db
 from app.schemas.user import ChangePassword, UserCreate, UserUpdate
 
@@ -75,6 +80,15 @@ async def get_user_service(user_id: UUID, db: AsyncSession) -> User | None:
         raise FieldNotFoundException("user", str(user_id))
 
     return user
+
+
+async def my_activities_service(current_user: User, db: AsyncSession) -> dict:
+    posts = await get_user_posts_db(current_user.id, db)
+    comments = await get_all_comments_db(
+        current_user.id, db, selectinload(Comment.post).selectinload(Post.author)
+    )
+
+    return {"posts": posts, "comments": comments}
 
 
 async def update_profile_service(

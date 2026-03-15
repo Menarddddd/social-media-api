@@ -13,6 +13,7 @@ from app.models.user import User
 from app.repositories.user import get_all_active_users_db
 from app.schemas.user import (
     ChangePassword,
+    UserActivity,
     UserCreate,
     UserResponse,
     UserUpdate,
@@ -24,6 +25,7 @@ from app.services.user import (
     delete_profile_service,
     get_user_service,
     login_service,
+    my_activities_service,
     update_profile_service,
 )
 
@@ -51,6 +53,14 @@ async def my_profile(
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
     return current_user
+
+
+@router.get("/activity", response_model=UserActivity, status_code=status.HTTP_200_OK)
+async def my_activities(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    return await my_activities_service(current_user, db)
 
 
 @router.delete("", status_code=status.HTTP_204_NO_CONTENT)
