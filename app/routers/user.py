@@ -1,7 +1,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import Depends, status
+from fastapi import Depends, Query, status
 from fastapi.routing import APIRouter
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select
@@ -59,8 +59,13 @@ async def my_profile(
 async def my_activities(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
+    limit: Annotated[int, Query(ge=1, le=50)] = 10,
+    posts_cursor: Annotated[str | None, Query()] = None,
+    comments_cursor: Annotated[str | None, Query()] = None,
 ):
-    return await my_activities_service(current_user, db)
+    return await my_activities_service(
+        current_user, db, limit, posts_cursor, comments_cursor
+    )
 
 
 @router.delete("", status_code=status.HTTP_204_NO_CONTENT)
@@ -69,7 +74,7 @@ async def delete_user(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
-    await db.delete(User.id == user_id)
+    await db.delete(current_user)
 
 
 @router.get("", response_model=list[UserResponse], status_code=status.HTTP_200_OK)

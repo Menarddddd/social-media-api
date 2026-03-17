@@ -1,19 +1,19 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import Depends, status
+from fastapi import Depends, Query, status
 from fastapi.routing import APIRouter
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.dependency import comment_owner, get_current_user
 from app.models.comment import Comment
-from app.models.post import Post
 from app.models.user import User
 from app.schemas.comment import (
     CommentCreate,
     CommentLoadedAllResponse,
     CommentLoadedResponse,
+    CommentPageResponse,
     CommentResponse,
     CommentUpdate,
 )
@@ -38,14 +38,14 @@ async def create_comment(
     return await create_comment_service(form_data.message, post_id, current_user, db)
 
 
-@router.get(
-    "", response_model=list[CommentLoadedResponse], status_code=status.HTTP_200_OK
-)
+@router.get("", response_model=CommentPageResponse, status_code=status.HTTP_200_OK)
 async def my_comments(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
+    limit: Annotated[int, Query(ge=1, le=50)] = 10,
+    cursor: Annotated[str | None, Query()] = None,
 ):
-    return await my_comments_service(current_user, db)
+    return await my_comments_service(current_user, db, limit, cursor)
 
 
 @router.get(

@@ -11,7 +11,7 @@ from app.core.security import (
     hash_password,
     verify_password,
 )
-from app.core.utils import parse_user_info
+from app.core.utils import decode_cursor, encode_cursor, parse_user_info
 from app.exceptions.exception import (
     CredentialsException,
     FieldNotFoundException,
@@ -23,7 +23,15 @@ from app.models.user import User, UserDeletion
 from app.repositories.comment import get_all_comments_db
 from app.repositories.post import get_user_posts_db
 from app.repositories.user import get_active_user_by_id_db
-from app.schemas.user import ChangePassword, UserCreate, UserUpdate
+from app.schemas.user import (
+    ActivityListPageInfo,
+    ChangePassword,
+    CommentPublic,
+    PostPublic,
+    UserActivity,
+    UserCreate,
+    UserUpdate,
+)
 
 UPDATE_USER_ALLOWED = {"first_name", "last_name", "username", "email"}
 
@@ -82,13 +90,63 @@ async def get_user_service(user_id: UUID, db: AsyncSession) -> User | None:
     return user
 
 
-async def my_activities_service(current_user: User, db: AsyncSession) -> dict:
-    posts = await get_user_posts_db(current_user.id, db)
-    comments = await get_all_comments_db(
-        current_user.id, db, selectinload(Comment.post).selectinload(Post.author)
+async def my_activities_service(
+    current_user: User,
+    db: AsyncSession,
+    limit: int,
+    posts_cursor_token: str | None,
+    comments_cursor_token: str | None,
+):
+    posts_cursor = decode_cursor(posts_cursor_token) if posts_cursor_token else None
+    comments_cursor = (
+        decode_cursor(comments_cursor_token) if comments_cursor_token else None
     )
 
-    return {"posts": posts, "comments": comments}
+    posts = list(await get_user_posts_db(current_user.id, db, limit, posts_cursor))
+
+    comments = list(
+        await get_all_comments_db(
+            current_user.id,
+            db,
+            limit,
+            comments_cursor,
+            selectinload(Comment.post).selectinload(Post.author),
+        )
+    )
+
+    post_next_page = len(posts) > limit
+    comment_next_page = len(comments) > limit
+
+    if post_next_page:
+        posts = posts[:limit]
+
+    if comment_next_page:
+        comments = comments[:limit]
+
+    post_next_cursor = None
+    if post_next_page and posts:
+        last_post = posts[-1]
+        post_next_cursor = encode_cursor(
+            date_created=last_post.date_created, item_id=last_post.id
+        )
+
+    comment_next_cursor = None
+    if comment_next_page and comments:
+        last_comment = comments[-1]
+        comment_next_cursor = encode_cursor(
+            date_created=last_comment.date_created, item_id=last_comment.id
+        )
+
+    return UserActivity(
+        posts=[PostPublic.model_validate(post) for post in posts],
+        comments=[CommentPublic.model_validate(comment) for comment in comments],
+        page_info=ActivityListPageInfo(
+            posts_next_cursor=post_next_cursor,
+            posts_next_page=post_next_page,
+            comments_next_cursor=comment_next_cursor,
+            comments_next_page=comment_next_page,
+        ),
+    )
 
 
 async def update_profile_service(

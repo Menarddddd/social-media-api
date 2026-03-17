@@ -2,6 +2,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, EmailStr, model_validator
 
 from app.exceptions.exception import BadRequestException
+from app.schemas.cursor import CursorPageInfo
 
 
 class Token(BaseModel):
@@ -80,6 +81,14 @@ class CommentPublic(BaseModel):
     post: PostPublic
 
 
+class ActivityListPageInfo(BaseModel):
+    posts_next_cursor: str | None = None
+    posts_next_page: bool
+    comments_next_cursor: str | None = None
+    comments_next_page: bool
+
+
 class UserActivity(BaseModel):
     posts: list[PostPublic]
     comments: list[CommentPublic]
+    page_info: ActivityListPageInfo
