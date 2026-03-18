@@ -1,7 +1,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import Depends, Query, status
+from fastapi import Depends, Query, Request, status
 from fastapi.routing import APIRouter
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select
@@ -13,6 +13,7 @@ from app.models.user import User
 from app.repositories.user import get_all_active_users_db
 from app.schemas.user import (
     ChangePassword,
+    Token,
     UserActivity,
     UserCreate,
     UserResponse,
@@ -26,6 +27,7 @@ from app.services.user import (
     get_user_service,
     login_service,
     my_activities_service,
+    refresh_token_service,
     update_profile_service,
 )
 
@@ -112,4 +114,13 @@ async def delete_profile(
 ):
     return await delete_profile_service(
         form_data.password, form_data.reason, current_user, db
+    )
+
+
+@router.post("/refresh", response_model=Token, status_code=status.HTTP_200_OK)
+async def refresh_token(
+    request: Request, refresh_token: str, db: Annotated[AsyncSession, Depends(get_db)]
+):
+    return await refresh_token_service(
+        refresh_token=refresh_token, db=db, request=request
     )

@@ -3,6 +3,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.refresh_token import RefreshToken
 from app.models.user import Role, User
 
 
@@ -46,3 +47,12 @@ async def get_active_admins_db(db: AsyncSession, limit: int, offset: int):
     )
 
     return result.scalars().all()
+
+
+# REFRESH TOKEN
+async def get_refresh_token_db(hashed_refersh_token: str, db: AsyncSession):
+    result = await db.execute(
+        select(RefreshToken).where(RefreshToken.hashed_token == hashed_refersh_token)
+    )
+
+    return result.scalar_one_or_none()

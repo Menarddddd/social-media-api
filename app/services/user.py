@@ -1,15 +1,20 @@
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
+from fastapi import Request
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.settings import settings
 from app.core.security import (
     create_access_token,
     create_refresh_token,
     hash_password,
+    hash_refresh_token,
     verify_password,
+    verify_token,
 )
 from app.core.utils import decode_cursor, encode_cursor, parse_user_info
 from app.exceptions.exception import (
@@ -19,12 +24,14 @@ from app.exceptions.exception import (
 )
 from app.models.comment import Comment
 from app.models.post import Post
+from app.models.refresh_token import RefreshToken
 from app.models.user import Role, User, UserDeletion
 from app.repositories.comment import get_all_comments_db
 from app.repositories.post import get_user_posts_db
 from app.repositories.user import (
     get_active_user_by_id_db,
     get_active_user_by_username_db,
+    get_refresh_token_db,
 )
 from app.schemas.user import (
     ActivityListPageInfo,
@@ -39,7 +46,9 @@ from app.schemas.user import (
 UPDATE_USER_ALLOWED = {"first_name", "last_name", "username", "email"}
 
 
-async def login_service(username: str, password: str, db: AsyncSession) -> dict:
+async def login_service(
+    username: str, password: str, db: AsyncSession, request: Request | None = None
+) -> dict:
     user = await get_active_user_by_username_db(username, db)
 
     if not user:
@@ -49,12 +58,32 @@ async def login_service(username: str, password: str, db: AsyncSession) -> dict:
         raise CredentialsException("Username or password is incorrect")
 
     access_token = create_access_token({"sub": str(user.id)})
-    refresh_token = create_refresh_token({"sub": str(user.id)})
+    refresh_token_plain = create_refresh_token({"sub": str(user.id)})
+    refresh_token_hash = hash_refresh_token(refresh_token_plain)
+
+    device_name = None
+    user_agent = None
+
+    if request:
+        user_agent = request.headers.get("User-Agent")
+        device_name = user_agent[:100] if user_agent else None
+
+    db_refresh_token = RefreshToken(
+        user_id=user.id,
+        hashed_token=refresh_token_hash,
+        date_expire=datetime.now(timezone.utc)
+        + timedelta(days=settings.REFRESH_DAYS_EXPIRE),
+        device_name=device_name,
+        user_agent=user_agent,
+        revoke=False,
+    )
+
+    # db.add(db_refresh_token) # comment this out if you are gonna use refresh token
 
     return {
         "access_token": access_token,
-        "token_type": "Bearer",
-        "refersh_token": refresh_token,
+        "token_type": "bearer",
+        "refresh_token": refresh_token_plain,
     }
 
 
@@ -241,3 +270,67 @@ async def delete_user_service(user_id: UUID, reason: str, db: AsyncSession):
     db.add(user_deletion)
 
     await db.flush()
+
+
+async def refresh_token_service(
+    refresh_token: str, db: AsyncSession, request: Request | None = None
+) -> dict:
+    hashed_token = hash_refresh_token(refresh_token)
+    db_token = await get_refresh_token_db(hashed_token, db)
+
+    if not db_token:
+        raise CredentialsException("Invalid refresh token")
+
+    if db_token.revoke:
+        raise CredentialsException("Refresh token has been revoked")
+
+    if db_token.date_expire < datetime.now(timezone.utc):
+        db_token.revoke = True
+        await db.flush()
+        raise CredentialsException("Refresh token has expired")
+
+    if not verify_token(refresh_token, db_token.hashed_token):
+        raise CredentialsException("Invalid refresh token")
+
+    user = await get_active_user_by_id_db(db_token.user_id, db)
+
+    if not user:
+        db_token.revoke = True
+        await db.flush()
+        raise CredentialsException("User not found")
+
+    if user.is_deleted:
+        db_token.revoke = True
+        await db.flush()
+        raise CredentialsException("User account has been deleted")
+
+    db_token.revoke = True
+
+    new_access_token = create_access_token({"sub": str(user.id)})
+    new_refresh_token_plain = create_refresh_token({"sub": str(user.id)})
+    new_refresh_token_hash = hash_refresh_token(new_refresh_token_plain)
+
+    device_name = None
+    user_agent = None
+
+    if request:
+        user_agent = request.headers.get("User-Agent")
+        device_name = user_agent[:100] if user_agent else None
+
+    new_db_refresh_token = RefreshToken(
+        user_id=user.id,
+        hashed_token=new_refresh_token_hash,
+        date_expire=datetime.now(timezone.utc)
+        + timedelta(days=settings.REFRESH_DAYS_EXPIRE),
+        device_name=device_name,
+        user_agent=user_agent,
+        revoke=False,
+    )
+
+    db.add(new_db_refresh_token)
+
+    return {
+        "access_token": new_access_token,
+        "token_type": "bearer",
+        "refresh_token": new_refresh_token_plain,
+    }

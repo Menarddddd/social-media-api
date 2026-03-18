@@ -1,7 +1,9 @@
-from datetime import datetime, timedelta, timezone
-
 import jwt
+import hmac
+import secrets
+import hashlib
 from pwdlib import PasswordHash
+from datetime import datetime, timedelta, timezone
 
 from app.core.settings import settings
 
@@ -45,3 +47,17 @@ def create_refresh_token(sub: dict):
     )
 
     return payload
+
+
+def hash_refresh_token(token: str):
+    return hmac.new(
+        key=settings.REFRESH_SECRET_KEY.get_secret_value().encode(),
+        msg=token.encode(),
+        digestmod=hashlib.sha256,
+    ).hexdigest()
+
+
+def verify_token(plain_token: str, hashed_token: str) -> bool:
+    computed_hash = hash_refresh_token(plain_token)
+
+    return secrets.compare_digest(computed_hash, hashed_token)

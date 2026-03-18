@@ -17,5 +17,11 @@ class Settings(BaseSettings):
 
     ALGORITHM: str
 
+    ADMIN_FIRST_NAME: str
+    ADMIN_LAST_NAME: str
+    ADMIN_USERNAME: str
+    ADMIN_EMAIL: str
+    ADMIN_PASSWORD: str
+
 
 settings = Settings()  # type: ignore LOAD FROM ENV FILE

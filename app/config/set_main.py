@@ -1,8 +1,12 @@
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import Base, engine
+from app.core.database import Base, engine, AsyncSessionLocal
+from app.core.security import hash_password
+from app.core.settings import settings
 from app import models  # loads model
 
 from app.core.dependency import require_admin
@@ -18,20 +22,11 @@ from app.exceptions.handler import (
     duplicate_entry_exception_handler,
     field_not_found_exception_handler,
 )
+from app.models.user import Role, User
 from app.routers.user import router as user_router
 from app.routers.post import router as post_router
 from app.routers.comment import router as comment_router
 from app.routers.admin import router as admin_router
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
-        yield
-
-        await engine.dispose()
 
 
 def register_routers(app: FastAPI):
@@ -53,3 +48,41 @@ def register_exception_handlers(app: FastAPI):
     )
     app.add_exception_handler(CredentialsException, credentials_exception_handler)
     app.add_exception_handler(BadRequestException, bad_request_exception_handler)
+
+
+# THIS CREATES ADMIN ACCOUNT IN START UP OF APP IF THERE IS NONE
+async def create_initial_admin(db: AsyncSession):
+    result = await db.execute(select(User).where(User.role == Role.ADMIN).limit(1))
+    existing_admin = result.scalar_one_or_none()
+
+    if existing_admin:
+        return
+
+    admin = User(
+        first_name=settings.ADMIN_FIRST_NAME,
+        last_name=settings.ADMIN_LAST_NAME,
+        username=settings.ADMIN_USERNAME,
+        email=settings.ADMIN_EMAIL,
+        password=hash_password(settings.ADMIN_PASSWORD),
+        role=Role.ADMIN,
+    )
+
+    db.add(admin)
+    await db.commit()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    async with AsyncSessionLocal() as db:
+        try:
+            await create_initial_admin(db)
+        except Exception:
+            await db.rollback()
+            raise
+
+    yield
+
+    await engine.dispose()
