@@ -82,6 +82,3 @@ async def delete_post(
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
     await db.delete(post)
-
-
-# Implement cursor to user activity and fix bug in comment fetch

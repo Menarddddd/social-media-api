@@ -77,14 +77,6 @@ async def delete_user(
     await db.delete(current_user)
 
 
-@router.get("", response_model=list[UserResponse], status_code=status.HTTP_200_OK)
-async def get_users(
-    current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
-):
-    return await get_all_active_users_db(db)
-
-
 @router.get("/{user_id}", response_model=UserResponse, status_code=status.HTTP_200_OK)
 async def get_user(
     user_id: UUID,

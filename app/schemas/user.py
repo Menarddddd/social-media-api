@@ -92,3 +92,8 @@ class UserActivity(BaseModel):
     posts: list[PostPublic]
     comments: list[CommentPublic]
     page_info: ActivityListPageInfo
+
+
+# ADMIN
+class AdminDelete(BaseModel):
+    reason: str = Field(min_length=1, max_length=200)

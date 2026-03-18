@@ -1,3 +1,4 @@
+from enum import Enum
 import uuid
 from typing import TYPE_CHECKING
 from datetime import datetime, timezone
@@ -12,6 +13,11 @@ if TYPE_CHECKING:
     from app.models.post import Post
     from app.models.comment import Comment
     from app.models.refresh_token import RefreshToken
+
+
+class Role:
+    USER = "user"
+    ADMIN = "admin"
 
 
 class UserDeletion(Base):
@@ -46,6 +52,12 @@ class User(Base):
     username: Mapped[str] = mapped_column(sa.String(200), unique=True, nullable=False)
     email: Mapped[str] = mapped_column(sa.String(200), unique=True, nullable=False)
     password: Mapped[str] = mapped_column(sa.String(200), nullable=False)
+    role: Mapped[str] = mapped_column(
+        sa.String(100),
+        default=Role.USER,
+        server_default=sa.text("'user'"),
+        nullable=False,
+    )
     is_deleted: Mapped[bool] = mapped_column(
         sa.Boolean, default=False, server_default=sa.false(), nullable=False
     )

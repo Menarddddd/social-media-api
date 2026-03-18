@@ -19,10 +19,13 @@ from app.exceptions.exception import (
 )
 from app.models.comment import Comment
 from app.models.post import Post
-from app.models.user import User, UserDeletion
+from app.models.user import Role, User, UserDeletion
 from app.repositories.comment import get_all_comments_db
 from app.repositories.post import get_user_posts_db
-from app.repositories.user import get_active_user_by_id_db
+from app.repositories.user import (
+    get_active_user_by_id_db,
+    get_active_user_by_username_db,
+)
 from app.schemas.user import (
     ActivityListPageInfo,
     ChangePassword,
@@ -37,8 +40,7 @@ UPDATE_USER_ALLOWED = {"first_name", "last_name", "username", "email"}
 
 
 async def login_service(username: str, password: str, db: AsyncSession) -> dict:
-    result = await db.execute(select(User).where(User.username == username))
-    user = result.scalar_one_or_none()
+    user = await get_active_user_by_username_db(username, db)
 
     if not user:
         raise FieldNotFoundException("user", username)
@@ -188,7 +190,10 @@ async def change_password_service(form_data: ChangePassword, current_user: User)
 
 
 async def delete_profile_service(
-    password: str, reason: str | None, current_user: User, db: AsyncSession
+    password: str,
+    reason: str | None,
+    current_user: User,
+    db: AsyncSession,
 ):
     if not verify_password(password, current_user.password):
         raise CredentialsException("Incorrect password")
@@ -200,3 +205,39 @@ async def delete_profile_service(
     db.add(user_deletion)
 
     await db.flush()  # if error raise now
+
+
+# ADMIN
+async def promote_user_to_admin_service(user_id: UUID, db: AsyncSession):
+    user = await get_active_user_by_id_db(user_id, db)
+
+    if not user:
+        raise FieldNotFoundException("user", str(user_id))
+
+    user.role = Role.ADMIN
+
+    return {"message": f"You've successfuly promoted {user.username} to admin"}
+
+
+async def admin_delete_profile_service(reason: str, user: User, db: AsyncSession):
+    user.is_deleted = True
+
+    user_deletion = UserDeletion(reason=reason, user=user)
+
+    db.add(user_deletion)
+
+    await db.flush()
+
+
+async def delete_user_service(user_id: UUID, reason: str, db: AsyncSession):
+    user = await get_active_user_by_id_db(user_id, db)
+    if not user:
+        raise FieldNotFoundException("user", str(user_id))
+
+    user.is_deleted = True
+
+    user_deletion = UserDeletion(reason=reason, user=user)
+
+    db.add(user_deletion)
+
+    await db.flush()

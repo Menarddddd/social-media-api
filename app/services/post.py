@@ -116,3 +116,12 @@ async def update_post_service(form_data: PostUpdate, post: Post):
         setattr(post, k, v)
 
     return post
+
+
+# ADMIN
+async def admin_delete_post_service(post_id: UUID, db: AsyncSession):
+    post = await get_post_by_id_db(post_id, db)
+    if not post:
+        raise FieldNotFoundException("post", str(post_id))
+
+    await db.delete(post)

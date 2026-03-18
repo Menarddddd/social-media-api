@@ -1,10 +1,11 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 
 from app.core.database import Base, engine
 from app import models  # loads model
 
+from app.core.dependency import require_admin
 from app.exceptions.exception import (
     BadRequestException,
     CredentialsException,
@@ -20,6 +21,7 @@ from app.exceptions.handler import (
 from app.routers.user import router as user_router
 from app.routers.post import router as post_router
 from app.routers.comment import router as comment_router
+from app.routers.admin import router as admin_router
 
 
 @asynccontextmanager
@@ -36,6 +38,12 @@ def register_routers(app: FastAPI):
     app.include_router(user_router, prefix="/api/users", tags=["users"])
     app.include_router(post_router, prefix="/api/posts", tags=["posts"])
     app.include_router(comment_router, prefix="/api/comments", tags=["comments"])
+    app.include_router(
+        admin_router,
+        prefix="/api/admin",
+        tags=["admin"],
+        dependencies=[Depends(require_admin)],
+    )
 
 
 def register_exception_handlers(app: FastAPI):

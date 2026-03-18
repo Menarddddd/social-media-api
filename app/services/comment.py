@@ -86,3 +86,12 @@ async def update_comment_service(message: str, comment: Comment) -> Comment:
     comment.message = message
 
     return comment
+
+
+# ADMIN
+async def admin_delete_comment_service(comment_id: UUID, db: AsyncSession):
+    comment = await get_comment_by_id_db(comment_id, db)
+    if not comment:
+        raise FieldNotFoundException("comment", str(comment_id))
+
+    await db.delete(comment)

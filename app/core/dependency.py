@@ -12,7 +12,7 @@ from jwt import ExpiredSignatureError, PyJWTError
 from app.core.database import get_db
 from app.core.settings import settings
 from app.exceptions.exception import FieldNotFoundException
-from app.models.user import User
+from app.models.user import Role, User
 from app.repositories.comment import get_comment_by_id_db
 from app.repositories.post import get_post_by_id_db
 from app.repositories.user import get_active_user_by_id_db
@@ -65,6 +65,18 @@ async def get_current_user(
 
     except PyJWTError:
         raise credentials_exc
+
+
+async def require_admin(
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> User:
+    if current_user.role != Role.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required",
+        )
+
+    return current_user
 
 
 async def post_owner(
