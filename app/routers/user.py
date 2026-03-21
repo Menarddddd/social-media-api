@@ -4,13 +4,11 @@ from uuid import UUID
 from fastapi import Depends, Query, Request, status
 from fastapi.routing import APIRouter
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.dependency import get_current_user
 from app.models.user import User
-from app.repositories.user import get_all_active_users_db
 from app.schemas.user import (
     ChangePassword,
     Token,
@@ -70,15 +68,6 @@ async def my_activities(
     )
 
 
-@router.delete("", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_user(
-    user_id: UUID,
-    current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
-):
-    await db.delete(current_user)
-
-
 @router.get("/{user_id}", response_model=UserResponse, status_code=status.HTTP_200_OK)
 async def get_user(
     user_id: UUID,
@@ -101,7 +90,6 @@ async def update_profile(
 async def change_password(
     form_data: ChangePassword,
     current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     return await change_password_service(form_data, current_user)
 

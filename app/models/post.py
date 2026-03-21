@@ -25,6 +25,7 @@ class Post(Base):
         sa.DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
         nullable=False,
+        index=True,
     )
     user_id: Mapped[uuid.UUID] = mapped_column(
         sa.ForeignKey("users.id"), nullable=False

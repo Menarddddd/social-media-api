@@ -34,6 +34,7 @@ class RefreshToken(Base):
         sa.DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc)
         + timedelta(days=settings.REFRESH_DAYS_EXPIRE),
+        index=True,
     )
     device_name: Mapped[str | None] = mapped_column(sa.String(100), nullable=True)
     user_agent: Mapped[str | None] = mapped_column(sa.Text, nullable=True)

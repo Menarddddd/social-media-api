@@ -1,10 +1,11 @@
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.models.refresh_token import RefreshToken
-from app.models.user import Role, User
+from app.models.user import Role, User, UserDeletion
 
 
 async def _get_active_user_db(filter, db: AsyncSession, *options):
@@ -47,6 +48,54 @@ async def get_active_admins_db(db: AsyncSession, limit: int, offset: int):
     )
 
     return result.scalars().all()
+
+
+# USER DELETION
+async def get_users_deletions_db(db: AsyncSession, limit: int, offset: int):
+    result = await db.execute(
+        select(UserDeletion)
+        .options(
+            selectinload(UserDeletion.user), selectinload(UserDeletion.deleted_by_user)
+        )
+        .offset(offset)
+        .limit(limit)
+    )
+
+    return result.scalars().all()
+
+
+async def get_user_from_user_deletion_id_db(deletion_id: UUID, db: AsyncSession):
+    result = await db.execute(
+        select(UserDeletion)
+        .where(UserDeletion.id == deletion_id)
+        .options(selectinload(UserDeletion.user).selectinload(User.user_deletion))
+    )
+
+    return result.scalar_one_or_none()
+
+
+async def get_user_deletion_by_user_id_db(user_id: UUID, db: AsyncSession):
+    result = await db.execute(
+        select(User)
+        .where(User.id == user_id, User.is_deleted.is_(True))
+        .options(
+            selectinload(User.user_deletion).selectinload(UserDeletion.deleted_by_user)
+        )
+    )
+
+    return result.scalar_one_or_none()
+
+
+async def get_user_deletion_by_user_username_db(username: str, db: AsyncSession):
+    result = await db.execute(
+        select(User)
+        .where(User.username == username, User.is_deleted.is_(True))
+        .options(
+            selectinload(User.user_deletion).selectinload(UserDeletion.deleted_by_user)
+        )
+    )
+
+    return result.scalar_one_or_none()
 
 
 # REFRESH TOKEN

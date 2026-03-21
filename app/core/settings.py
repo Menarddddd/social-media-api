@@ -23,5 +23,10 @@ class Settings(BaseSettings):
     ADMIN_EMAIL: str
     ADMIN_PASSWORD: str
 
+    REDIS_HOST: str
+    REDIS_PORT: int
+    REDIS_PASSWORD: str
+    SOFT_DELETE_RETENTION_DAYS: int
+
 
 settings = Settings()  # type: ignore LOAD FROM ENV FILE

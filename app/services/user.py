@@ -2,7 +2,6 @@ from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 from fastapi import Request
-from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -18,6 +17,7 @@ from app.core.security import (
 )
 from app.core.utils import decode_cursor, encode_cursor, parse_user_info
 from app.exceptions.exception import (
+    BadRequestException,
     CredentialsException,
     FieldNotFoundException,
     raise_duplicate_from_integrity_error,
@@ -32,6 +32,9 @@ from app.repositories.user import (
     get_active_user_by_id_db,
     get_active_user_by_username_db,
     get_refresh_token_db,
+    get_user_deletion_by_user_id_db,
+    get_user_deletion_by_user_username_db,
+    get_user_from_user_deletion_id_db,
 )
 from app.schemas.user import (
     ActivityListPageInfo,
@@ -40,6 +43,9 @@ from app.schemas.user import (
     PostPublic,
     UserActivity,
     UserCreate,
+    UserDeletionLoadedResponse,
+    UserDeletionResponse,
+    UserResponse,
     UserUpdate,
 )
 
@@ -229,7 +235,12 @@ async def delete_profile_service(
 
     current_user.is_deleted = True  # soft delete
 
-    user_deletion = UserDeletion(reason=reason, user=current_user)
+    user_deletion = UserDeletion(
+        reason=reason,
+        username=current_user.username,
+        user=current_user,
+        deleted_by=current_user.id,
+    )
 
     db.add(user_deletion)
 
@@ -248,28 +259,48 @@ async def promote_user_to_admin_service(user_id: UUID, db: AsyncSession):
     return {"message": f"You've successfuly promoted {user.username} to admin"}
 
 
-async def admin_delete_profile_service(reason: str, user: User, db: AsyncSession):
-    user.is_deleted = True
-
-    user_deletion = UserDeletion(reason=reason, user=user)
-
-    db.add(user_deletion)
-
-    await db.flush()
-
-
-async def delete_user_service(user_id: UUID, reason: str, db: AsyncSession):
+async def admin_delete_profile_service(
+    reason: str, user_id: UUID, admin: User, db: AsyncSession
+):
     user = await get_active_user_by_id_db(user_id, db)
     if not user:
         raise FieldNotFoundException("user", str(user_id))
 
     user.is_deleted = True
 
-    user_deletion = UserDeletion(reason=reason, user=user)
+    user_deletion = UserDeletion(
+        reason=reason, username=user.username, user=user, deleted_by=admin.id
+    )
 
     db.add(user_deletion)
 
     await db.flush()
+
+
+async def get_user_deletion_by_user_id_service(user_id: UUID, db: AsyncSession):
+    user = await get_user_deletion_by_user_id_db(user_id, db)
+    if not user:
+        raise FieldNotFoundException("user", str(user_id))
+
+    user_deletion_data = user.user_deletion
+
+    return UserDeletionLoadedResponse(
+        user=UserResponse.model_validate(user),
+        user_deletion=UserDeletionResponse.model_validate(user_deletion_data),
+    )
+
+
+async def get_user_deletion_by_deletion_id_service(deletion_id: UUID, db: AsyncSession):
+    user_deletion_data = await get_user_from_user_deletion_id_db(deletion_id, db)
+    if not user_deletion_data:
+        raise FieldNotFoundException("user deletion", str(deletion_id))
+
+    user = user_deletion_data.user
+
+    return UserDeletionLoadedResponse(
+        user=UserResponse.model_validate(user),
+        user_deletion=UserDeletionResponse.model_validate(user_deletion_data),
+    )
 
 
 async def refresh_token_service(

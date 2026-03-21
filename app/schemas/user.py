@@ -1,8 +1,8 @@
+from datetime import datetime
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, EmailStr, model_validator
 
 from app.exceptions.exception import BadRequestException
-from app.schemas.cursor import CursorPageInfo
 
 
 class Token(BaseModel):
@@ -92,6 +92,32 @@ class UserActivity(BaseModel):
     posts: list[PostPublic]
     comments: list[CommentPublic]
     page_info: ActivityListPageInfo
+
+
+class UserDeletionResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    user_id: UUID
+    username: str
+    reason: str | None
+    deleted_at: datetime
+    deleted_by: UserPublic = Field(alias="deleted_by_user")
+
+
+class UserDeletedResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    first_name: str
+    last_name: str
+    username: str
+    email: EmailStr
+
+
+class UserDeletionLoadedResponse(BaseModel):
+    user: UserResponse
+    user_deletion: UserDeletionResponse
 
 
 # ADMIN

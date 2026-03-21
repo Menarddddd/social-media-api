@@ -1,4 +1,3 @@
-from enum import Enum
 import uuid
 from typing import TYPE_CHECKING
 from datetime import datetime, timezone
@@ -27,7 +26,10 @@ class UserDeletion(Base):
         PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     user_id: Mapped[uuid.UUID] = mapped_column(
-        sa.ForeignKey("users.id"), nullable=False
+        sa.ForeignKey("users.id"), nullable=False, index=True
+    )
+    username: Mapped[str] = mapped_column(
+        sa.String(200), unique=True, nullable=False, index=True
     )
     reason: Mapped[str | None] = mapped_column(
         sa.String(200), default=None, nullable=True
@@ -36,9 +38,19 @@ class UserDeletion(Base):
         sa.DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
         nullable=False,
+        index=True,
+    )
+    deleted_by: Mapped[uuid.UUID] = mapped_column(
+        sa.ForeignKey("users.id"), nullable=False
     )
 
-    user: Mapped["User"] = relationship("User", back_populates="user_deletions")
+    user: Mapped["User"] = relationship(
+        "User",
+        foreign_keys=[user_id],
+        back_populates="user_deletion",
+    )
+
+    deleted_by_user: Mapped["User"] = relationship("User", foreign_keys=[deleted_by])
 
 
 class User(Base):
@@ -49,7 +61,9 @@ class User(Base):
     )
     first_name: Mapped[str] = mapped_column(sa.String(100), nullable=False)
     last_name: Mapped[str] = mapped_column(sa.String(100), nullable=False)
-    username: Mapped[str] = mapped_column(sa.String(200), unique=True, nullable=False)
+    username: Mapped[str] = mapped_column(
+        sa.String(200), unique=True, nullable=False, index=True
+    )
     email: Mapped[str] = mapped_column(sa.String(200), unique=True, nullable=False)
     password: Mapped[str] = mapped_column(sa.String(200), nullable=False)
     role: Mapped[str] = mapped_column(
@@ -59,7 +73,7 @@ class User(Base):
         nullable=False,
     )
     is_deleted: Mapped[bool] = mapped_column(
-        sa.Boolean, default=False, server_default=sa.false(), nullable=False
+        sa.Boolean, default=False, server_default=sa.false(), nullable=False, index=True
     )
 
     posts: Mapped[list["Post"]] = relationship(
@@ -71,8 +85,16 @@ class User(Base):
     refresh_tokens: Mapped[list["RefreshToken"]] = relationship(
         "RefreshToken", back_populates="user", cascade="all, delete-orphan"
     )
-    user_deletions: Mapped[list["UserDeletion"]] = relationship(
-        "UserDeletion", back_populates="user", cascade="all, delete-orphan"
+    user_deletion: Mapped["UserDeletion"] = relationship(
+        "UserDeletion",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        foreign_keys=[UserDeletion.user_id],
+        uselist=False,
+    )
+
+    performed_deletions: Mapped["UserDeletion"] = relationship(
+        "UserDeletion", foreign_keys=[UserDeletion.deleted_by]
     )
 
     __table_args__ = (
