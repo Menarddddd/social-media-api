@@ -4,7 +4,9 @@ from uuid import UUID
 
 from fastapi import HTTPException, status
 from pydantic import ValidationError
+import resend
 
+from app.core.settings import settings
 from app.schemas.cursor import CursorPayload
 
 
@@ -42,3 +44,24 @@ def decode_cursor(cursor: str):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid cursor"
         )
+
+
+async def send_recovery_email(to_email: str, token: str):
+    resend.Emails.send(
+        {
+            "from": "SocialMediaApp <onboarding@resend.dev>",
+            "to": [to_email],
+            "subject": "Password Recovery",
+            "html": f"""
+        <h2>Account Recovery</h2>
+        <p>You requested for account recovery.</p>
+        
+        <p><b>Your recovery token: </b></p>
+        <code style="font-size:16px;">{token}</code>
+
+        <p>This token will expire in {settings.RECOVERY_MINUTES} minutes.</p>
+
+        <p>If you did not make this request, ignore this email.</p>
+        """,
+        }
+    )

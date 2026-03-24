@@ -12,7 +12,6 @@ from app.models.user import User
 from app.schemas.comment import (
     CommentCreate,
     CommentLoadedAllResponse,
-    CommentLoadedResponse,
     CommentPageResponse,
     CommentResponse,
     CommentUpdate,

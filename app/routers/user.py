@@ -4,13 +4,16 @@ from uuid import UUID
 from fastapi import Depends, Query, Request, status
 from fastapi.routing import APIRouter
 from fastapi.security import OAuth2PasswordRequestForm
+from arq.connections import ArqRedis
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db
+from app.core.database import get_db, get_redis
 from app.core.dependency import get_current_user
 from app.models.user import User
 from app.schemas.user import (
     ChangePassword,
+    RecoveryComplete,
+    RecoveryRequest,
     Token,
     UserActivity,
     UserCreate,
@@ -19,6 +22,7 @@ from app.schemas.user import (
     UserDeletion,
 )
 from app.services.user import (
+    account_recovery_service,
     change_password_service,
     create_user_service,
     delete_profile_service,
@@ -26,8 +30,10 @@ from app.services.user import (
     login_service,
     my_activities_service,
     refresh_token_service,
+    reset_password_service,
     update_profile_service,
 )
+
 
 router = APIRouter()
 
@@ -45,6 +51,15 @@ async def create_user(
     form_data: UserCreate, db: Annotated[AsyncSession, Depends(get_db)]
 ):
     return await create_user_service(form_data, db)
+
+
+@router.post("/refresh", response_model=Token, status_code=status.HTTP_200_OK)
+async def refresh_token(
+    request: Request, refresh_token: str, db: Annotated[AsyncSession, Depends(get_db)]
+):
+    return await refresh_token_service(
+        refresh_token=refresh_token, db=db, request=request
+    )
 
 
 @router.get("/profile", response_model=UserResponse, status_code=status.HTTP_200_OK)
@@ -86,7 +101,7 @@ async def update_profile(
     return await update_profile_service(form_data, current_user, db)
 
 
-@router.patch("/change_password", status_code=status.HTTP_200_OK)
+@router.patch("/change-password", status_code=status.HTTP_200_OK)
 async def change_password(
     form_data: ChangePassword,
     current_user: Annotated[User, Depends(get_current_user)],
@@ -105,10 +120,18 @@ async def delete_profile(
     )
 
 
-@router.post("/refresh", response_model=Token, status_code=status.HTTP_200_OK)
-async def refresh_token(
-    request: Request, refresh_token: str, db: Annotated[AsyncSession, Depends(get_db)]
+@router.post("/recover", status_code=status.HTTP_200_OK)
+async def account_recovery(
+    form_data: RecoveryRequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    redis: Annotated[ArqRedis, Depends(get_redis)],
 ):
-    return await refresh_token_service(
-        refresh_token=refresh_token, db=db, request=request
-    )
+    return await account_recovery_service(form_data.email, db, redis)
+
+
+@router.post("/reset-password", status_code=status.HTTP_200_OK)
+async def reset_password(
+    form_data: RecoveryComplete,
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    return await reset_password_service(form_data.token, form_data.new_password, db)

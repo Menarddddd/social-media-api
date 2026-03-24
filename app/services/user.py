@@ -1,3 +1,5 @@
+from arq import ArqRedis
+import resend
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
@@ -10,9 +12,13 @@ from app.core.settings import settings
 from app.core.security import (
     create_access_token,
     create_refresh_token,
+    generate_recovery_token,
     hash_password,
+    hash_recovery_token,
     hash_refresh_token,
+    mark_token_used,
     verify_password,
+    verify_recovery_token,
     verify_token,
 )
 from app.core.utils import decode_cursor, encode_cursor, parse_user_info
@@ -25,16 +31,17 @@ from app.exceptions.exception import (
 from app.models.comment import Comment
 from app.models.post import Post
 from app.models.refresh_token import RefreshToken
-from app.models.user import Role, User, UserDeletion
+from app.models.user import User, UserDeletion
 from app.repositories.comment import get_all_comments_db
 from app.repositories.post import get_user_posts_db
 from app.repositories.user import (
+    delete_user_deletion_by_username_db,
     get_active_user_by_id_db,
     get_active_user_by_username_db,
     get_refresh_token_db,
+    get_user_by_email_db,
     get_user_deletion_by_user_id_db,
     get_user_deletion_by_user_username_db,
-    get_user_from_user_deletion_id_db,
 )
 from app.schemas.user import (
     ActivityListPageInfo,
@@ -43,13 +50,11 @@ from app.schemas.user import (
     PostPublic,
     UserActivity,
     UserCreate,
-    UserDeletionLoadedResponse,
-    UserDeletionResponse,
-    UserResponse,
     UserUpdate,
 )
 
 UPDATE_USER_ALLOWED = {"first_name", "last_name", "username", "email"}
+resend.api_key = settings.RESEND_API_KEY.get_secret_value()
 
 
 async def login_service(
@@ -58,6 +63,10 @@ async def login_service(
     user = await get_active_user_by_username_db(username, db)
 
     if not user:
+        user = await get_user_deletion_by_user_username_db(username, db)
+        if user:
+            raise CredentialsException("Your account is deactivated, activate it first")
+
         raise FieldNotFoundException("user", username)
 
     if not verify_password(password, user.password):
@@ -84,7 +93,7 @@ async def login_service(
         revoke=False,
     )
 
-    # db.add(db_refresh_token) # comment this out if you are gonna use refresh token
+    # db.add(db_refresh_token) # remove comment if you are gonna use refresh token
 
     return {
         "access_token": access_token,
@@ -247,62 +256,6 @@ async def delete_profile_service(
     await db.flush()  # if error raise now
 
 
-# ADMIN
-async def promote_user_to_admin_service(user_id: UUID, db: AsyncSession):
-    user = await get_active_user_by_id_db(user_id, db)
-
-    if not user:
-        raise FieldNotFoundException("user", str(user_id))
-
-    user.role = Role.ADMIN
-
-    return {"message": f"You've successfuly promoted {user.username} to admin"}
-
-
-async def admin_delete_profile_service(
-    reason: str, user_id: UUID, admin: User, db: AsyncSession
-):
-    user = await get_active_user_by_id_db(user_id, db)
-    if not user:
-        raise FieldNotFoundException("user", str(user_id))
-
-    user.is_deleted = True
-
-    user_deletion = UserDeletion(
-        reason=reason, username=user.username, user=user, deleted_by=admin.id
-    )
-
-    db.add(user_deletion)
-
-    await db.flush()
-
-
-async def get_user_deletion_by_user_id_service(user_id: UUID, db: AsyncSession):
-    user = await get_user_deletion_by_user_id_db(user_id, db)
-    if not user:
-        raise FieldNotFoundException("user", str(user_id))
-
-    user_deletion_data = user.user_deletion
-
-    return UserDeletionLoadedResponse(
-        user=UserResponse.model_validate(user),
-        user_deletion=UserDeletionResponse.model_validate(user_deletion_data),
-    )
-
-
-async def get_user_deletion_by_deletion_id_service(deletion_id: UUID, db: AsyncSession):
-    user_deletion_data = await get_user_from_user_deletion_id_db(deletion_id, db)
-    if not user_deletion_data:
-        raise FieldNotFoundException("user deletion", str(deletion_id))
-
-    user = user_deletion_data.user
-
-    return UserDeletionLoadedResponse(
-        user=UserResponse.model_validate(user),
-        user_deletion=UserDeletionResponse.model_validate(user_deletion_data),
-    )
-
-
 async def refresh_token_service(
     refresh_token: str, db: AsyncSession, request: Request | None = None
 ) -> dict:
@@ -364,4 +317,42 @@ async def refresh_token_service(
         "access_token": new_access_token,
         "token_type": "bearer",
         "refresh_token": new_refresh_token_plain,
+    }
+
+
+async def account_recovery_service(email: str, db: AsyncSession, redis: ArqRedis):
+    msg = {
+        "message": "If the email exists, a recovery token was sent. You need to put it in /reset password"
+    }
+
+    user = await get_user_by_email_db(email, db)
+    if not user:
+        return msg
+
+    token = await generate_recovery_token(user.id, db)
+
+    await redis.enqueue_job("send_recovery_email_task", user.email, token)
+
+    return msg
+
+
+async def reset_password_service(token: str, new_password: str, db: AsyncSession):
+    user_id = await verify_recovery_token(token, db)
+    if not user_id:
+        raise CredentialsException("Invalid recovery token")
+
+    user = await get_user_deletion_by_user_id_db(user_id, db)
+    if not user:
+        raise BadRequestException(
+            "Your account cannot be recovered since it's already past 30 days"
+        )
+
+    await delete_user_deletion_by_username_db(user.username, db)
+
+    user.password = hash_password(new_password)
+    user.is_deleted = False
+    await mark_token_used(hash_recovery_token(token), db)
+
+    return {
+        "message": "You've successfully recovered your account, you can now login with it."
     }

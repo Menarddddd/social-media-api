@@ -123,3 +123,12 @@ class UserDeletionLoadedResponse(BaseModel):
 # ADMIN
 class AdminDelete(BaseModel):
     reason: str = Field(min_length=1, max_length=200)
+
+
+class RecoveryRequest(BaseModel):
+    email: EmailStr
+
+
+class RecoveryComplete(BaseModel):
+    token: str
+    new_password: str = Field(min_length=7, max_length=200)

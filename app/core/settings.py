@@ -28,5 +28,9 @@ class Settings(BaseSettings):
     REDIS_PASSWORD: str
     SOFT_DELETE_RETENTION_DAYS: int
 
+    RESEND_API_KEY: SecretStr
+    RECOVERY_SECRET_KEY: SecretStr
+    RECOVERY_MINUTES: int
+
 
 settings = Settings()  # type: ignore LOAD FROM ENV FILE

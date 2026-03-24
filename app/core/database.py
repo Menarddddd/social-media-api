@@ -1,3 +1,5 @@
+from fastapi import Request
+from arq.connections import RedisSettings
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy.orm import DeclarativeBase
 
@@ -26,3 +28,15 @@ async def get_db():
 
 class Base(DeclarativeBase):
     pass
+
+
+def get_redis_settings():
+    return RedisSettings(
+        host=settings.REDIS_HOST,
+        port=settings.REDIS_PORT,
+        password=settings.REDIS_PASSWORD,
+    )
+
+
+def get_redis(request: Request):
+    return request.app.state.redis

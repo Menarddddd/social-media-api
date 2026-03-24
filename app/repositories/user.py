@@ -1,9 +1,11 @@
+from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import or_, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.models.account_recovery import AccountRecoveryToken
 from app.models.refresh_token import RefreshToken
 from app.models.user import Role, User, UserDeletion
 
@@ -25,6 +27,12 @@ async def get_active_user_by_id_db(user_id: UUID, db: AsyncSession, *options):
 
 async def get_active_user_by_username_db(username: str, db: AsyncSession, *options):
     return await _get_active_user_db(User.username == username, db, *options)
+
+
+# for account recovery
+async def get_user_by_email_db(email: str, db: AsyncSession):
+    result = await db.execute(select(User).where(User.email == email))
+    return result.scalar_one_or_none()
 
 
 async def get_all_active_users_db(db: AsyncSession, limit: int, offset: int):
@@ -66,7 +74,7 @@ async def get_users_deletions_db(db: AsyncSession, limit: int, offset: int):
 
 async def get_user_from_user_deletion_id_db(deletion_id: UUID, db: AsyncSession):
     result = await db.execute(
-        select(UserDeletion)
+        select(func.count())
         .where(UserDeletion.id == deletion_id)
         .options(selectinload(UserDeletion.user).selectinload(User.user_deletion))
     )
@@ -96,6 +104,10 @@ async def get_user_deletion_by_user_username_db(username: str, db: AsyncSession)
     )
 
     return result.scalar_one_or_none()
+
+
+async def delete_user_deletion_by_username_db(username, db: AsyncSession):
+    await db.execute(delete(UserDeletion).where(UserDeletion.username == username))
 
 
 # REFRESH TOKEN

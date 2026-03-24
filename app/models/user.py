@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from app.models.post import Post
     from app.models.comment import Comment
     from app.models.refresh_token import RefreshToken
+    from app.models.account_recovery import AccountRecoveryToken
 
 
 class Role:
@@ -91,6 +92,10 @@ class User(Base):
         cascade="all, delete-orphan",
         foreign_keys=[UserDeletion.user_id],
         uselist=False,
+    )
+
+    account_recovery: Mapped[list["AccountRecoveryToken"]] = relationship(
+        "AccountRecoveryToken", back_populates="user", cascade="all, delete-orphan"
     )
 
     performed_deletions: Mapped["UserDeletion"] = relationship(

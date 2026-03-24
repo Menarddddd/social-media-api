@@ -10,6 +10,7 @@ from app.core.dependency import require_admin
 from app.models.user import User
 from app.repositories.user import (
     get_active_admins_db,
+    get_active_user_by_id_db,
     get_all_active_users_db,
     get_users_deletions_db,
 )
@@ -19,14 +20,15 @@ from app.schemas.user import (
     UserDeletionResponse,
     UserResponse,
 )
-from app.services.comment import admin_delete_comment_service
-from app.services.post import admin_delete_post_service
-from app.services.user import (
+from app.services.admin import (
     admin_delete_profile_service,
     get_user_deletion_by_deletion_id_service,
     get_user_deletion_by_user_id_service,
     promote_user_to_admin_service,
 )
+from app.services.comment import admin_delete_comment_service
+from app.services.post import admin_delete_post_service
+
 
 router = APIRouter()
 
@@ -113,3 +115,10 @@ async def delete_comment(
     comment_id: UUID, db: Annotated[AsyncSession, Depends(get_db)]
 ):
     await admin_delete_comment_service(comment_id, db)
+
+
+@router.delete("/hard-delete", status_code=status.HTTP_204_NO_CONTENT)
+async def hard_delete_user(user_id: UUID, db: Annotated[AsyncSession, Depends(get_db)]):
+    user = await get_active_user_by_id_db(user_id, db)
+
+    await db.delete(user)

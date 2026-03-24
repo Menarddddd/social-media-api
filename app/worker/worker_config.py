@@ -1,12 +1,14 @@
 from arq import cron
-from arq.connections import RedisSettings
 
+from app.core.database import get_redis_settings
 from app.core.settings import settings
-from app.worker.task import hard_delete_expired_user
+from app.worker.task import hard_delete_expired_user, send_recovery_email_task
 
 
 class WorkerSettings:
-    functions = [hard_delete_expired_user]
+    redis_settings = get_redis_settings()
+
+    functions = [hard_delete_expired_user, send_recovery_email_task]
 
     cron_jobs = [
         cron(
@@ -18,11 +20,6 @@ class WorkerSettings:
         )
     ]
 
-    redis_settings = RedisSettings(
-        host=settings.REDIS_HOST,
-        port=settings.REDIS_PORT,
-        password=settings.REDIS_PASSWORD,
-    )
     max_jobs = 10
     max_tries = 3
     keep_result = 3600

@@ -3,8 +3,9 @@ from contextlib import asynccontextmanager
 from fastapi import Depends, FastAPI
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from arq import create_pool
 
-from app.core.database import Base, engine, AsyncSessionLocal
+from app.core.database import Base, engine, AsyncSessionLocal, get_redis_settings
 from app.core.security import hash_password
 from app.core.settings import settings
 from app import models  # loads model
@@ -83,6 +84,9 @@ async def lifespan(app: FastAPI):
             await db.rollback()
             raise
 
+    app.state.redis = await create_pool(get_redis_settings())
+
     yield
 
+    await app.state.redis.close()
     await engine.dispose()
