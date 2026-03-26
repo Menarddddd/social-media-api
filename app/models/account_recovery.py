@@ -17,7 +17,7 @@ class AccountRecoveryToken(Base):
     __tablename__ = "account_recovery_token"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4()
+        PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     user_id: Mapped[uuid.UUID] = mapped_column(
         PG_UUID(as_uuid=True), sa.ForeignKey("users.id"), nullable=False

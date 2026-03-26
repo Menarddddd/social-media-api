@@ -32,16 +32,18 @@ from app.models.comment import Comment
 from app.models.post import Post
 from app.models.refresh_token import RefreshToken
 from app.models.user import User, UserDeletion
+from app.repositories.admin import (
+    delete_user_deletion_by_username_db,
+    get_user_deletion_by_user_id_db,
+    get_user_deletion_by_user_username_db,
+)
 from app.repositories.comment import get_all_comments_db
 from app.repositories.post import get_user_posts_db
 from app.repositories.user import (
-    delete_user_deletion_by_username_db,
     get_active_user_by_id_db,
     get_active_user_by_username_db,
     get_refresh_token_db,
     get_user_by_email_db,
-    get_user_deletion_by_user_id_db,
-    get_user_deletion_by_user_username_db,
 )
 from app.schemas.user import (
     ActivityListPageInfo,
@@ -102,7 +104,7 @@ async def login_service(
     }
 
 
-async def create_user_service(form_data: UserCreate, db: AsyncSession) -> dict:
+async def create_user_service(form_data: UserCreate, db: AsyncSession) -> User:
     data = parse_user_info(form_data.model_dump())
 
     user = User(
@@ -116,16 +118,13 @@ async def create_user_service(form_data: UserCreate, db: AsyncSession) -> dict:
     try:
         db.add(user)
         await db.flush()
+        return user
 
     except IntegrityError as e:
         raise_duplicate_from_integrity_error(
             e, {"username": user.username, "email": user.email}
         )
         raise  # unkown error
-
-    return {
-        "message": "You've successfully created your account. You can now login with it"
-    }
 
 
 async def get_user_service(user_id: UUID, db: AsyncSession) -> User | None:
@@ -229,8 +228,6 @@ async def change_password_service(form_data: ChangePassword, current_user: User)
         raise CredentialsException("Invalid credentials")
 
     current_user.password = hash_password(form_data.new_password)
-
-    return {"message": "You've successfully changed your password"}
 
 
 async def delete_profile_service(
@@ -341,13 +338,15 @@ async def reset_password_service(token: str, new_password: str, db: AsyncSession
     if not user_id:
         raise CredentialsException("Invalid recovery token")
 
-    user = await get_user_deletion_by_user_id_db(user_id, db)
-    if not user:
+    user_deletion = await get_user_deletion_by_user_id_db(user_id, db)
+    if not user_deletion:
         raise BadRequestException(
             "Your account cannot be recovered since it's already past 30 days"
         )
 
-    await delete_user_deletion_by_username_db(user.username, db)
+    await delete_user_deletion_by_username_db(user_deletion.user.username, db)
+
+    user = user_deletion.user
 
     user.password = hash_password(new_password)
     user.is_deleted = False

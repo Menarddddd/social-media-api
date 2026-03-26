@@ -51,7 +51,9 @@ class UserDeletion(Base):
         back_populates="user_deletion",
     )
 
-    deleted_by_user: Mapped["User"] = relationship("User", foreign_keys=[deleted_by])
+    deleted_by_user: Mapped["User"] = relationship(
+        "User", foreign_keys=[deleted_by], back_populates="performed_deletions"
+    )
 
 
 class User(Base):
@@ -99,7 +101,9 @@ class User(Base):
     )
 
     performed_deletions: Mapped["UserDeletion"] = relationship(
-        "UserDeletion", foreign_keys=[UserDeletion.deleted_by]
+        "UserDeletion",
+        foreign_keys=[UserDeletion.deleted_by],
+        back_populates="deleted_by_user",
     )
 
     __table_args__ = (

@@ -47,21 +47,25 @@ def decode_cursor(cursor: str):
 
 
 async def send_recovery_email(to_email: str, token: str):
-    resend.Emails.send(
-        {
-            "from": "SocialMediaApp <onboarding@resend.dev>",
-            "to": [to_email],
-            "subject": "Password Recovery",
-            "html": f"""
-        <h2>Account Recovery</h2>
-        <p>You requested for account recovery.</p>
-        
-        <p><b>Your recovery token: </b></p>
-        <code style="font-size:16px;">{token}</code>
+    try:
+        resend.Emails.send(
+            {
+                "from": "SocialMediaApp <onboarding@resend.dev>",
+                "to": [to_email],
+                "subject": "Password Recovery",
+                "html": f"""
+            <h2>Account Recovery</h2>
+            <p>You requested for account recovery.</p>
 
-        <p>This token will expire in {settings.RECOVERY_MINUTES} minutes.</p>
+            <p><b>Your recovery token: </b></p>
+            <code style="font-size:16px;">{token}</code>
 
-        <p>If you did not make this request, ignore this email.</p>
-        """,
-        }
-    )
+            <p>This token will expire in {settings.RECOVERY_MINUTES} minutes.</p>
+
+            <p>If you did not make this request, ignore this email.</p>
+            """,
+            }
+        )
+    except Exception as e:
+        print(f"Failed to send email: {str(e)}")
+        raise

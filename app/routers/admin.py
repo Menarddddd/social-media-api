@@ -8,12 +8,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.dependency import require_admin
 from app.models.user import User
-from app.repositories.user import (
+from app.repositories.admin import (
     get_active_admins_db,
-    get_active_user_by_id_db,
     get_all_active_users_db,
     get_users_deletions_db,
 )
+from app.repositories.user import get_active_admin_by_id_db
 from app.schemas.user import (
     AdminDelete,
     UserDeletionLoadedResponse,
@@ -119,6 +119,6 @@ async def delete_comment(
 
 @router.delete("/hard-delete", status_code=status.HTTP_204_NO_CONTENT)
 async def hard_delete_user(user_id: UUID, db: Annotated[AsyncSession, Depends(get_db)]):
-    user = await get_active_user_by_id_db(user_id, db)
+    user = await get_active_admin_by_id_db(user_id, db)
 
     await db.delete(user)

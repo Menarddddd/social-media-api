@@ -1,8 +1,10 @@
+from typing import Literal
 from datetime import datetime
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, EmailStr, model_validator
 
 from app.exceptions.exception import BadRequestException
+from app.models.user import Role
 
 
 class Token(BaseModel):
@@ -44,6 +46,7 @@ class UserCreate(UserBase):
 class UserResponse(UserBase):
     model_config = ConfigDict(from_attributes=True)
 
+    role: Literal["user", "admin"]
     id: UUID
 
 

@@ -32,4 +32,6 @@ class Post(Base):
     )
 
     author: Mapped["User"] = relationship("User", back_populates="posts")
-    comments: Mapped[list["Comment"]] = relationship("Comment", back_populates="post")
+    comments: Mapped[list["Comment"]] = relationship(
+        "Comment", back_populates="post", cascade="all, delete-orphan"
+    )

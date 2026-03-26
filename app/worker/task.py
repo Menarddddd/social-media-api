@@ -1,5 +1,6 @@
 import logging
 
+import resend
 from sqlalchemy import delete, select
 
 from app.core.settings import settings
@@ -38,4 +39,13 @@ async def hard_delete_expired_user(ctx):
 
 
 async def send_recovery_email_task(ctx, to_email: str, token: str):
-    await send_recovery_email(to_email, token)
+    try:
+        if not resend.api_key:
+            resend.api_key = settings.RESEND_API_KEY.get_secret_value()
+            logger.info("Resend API key initialized in task")
+
+        await send_recovery_email(to_email, token)
+        logger.info(f"Recovery email sent to {to_email}")
+    except Exception as e:
+        logger.error(f"Failed to send recovery email: {str(e)}")
+        raise

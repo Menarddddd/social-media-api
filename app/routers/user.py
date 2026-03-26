@@ -46,7 +46,7 @@ async def login(
     return await login_service(form_data.username, form_data.password, db)
 
 
-@router.post("", status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def create_user(
     form_data: UserCreate, db: Annotated[AsyncSession, Depends(get_db)]
 ):
@@ -106,7 +106,7 @@ async def change_password(
     form_data: ChangePassword,
     current_user: Annotated[User, Depends(get_current_user)],
 ):
-    return await change_password_service(form_data, current_user)
+    await change_password_service(form_data, current_user)
 
 
 @router.post("/delete", status_code=status.HTTP_204_NO_CONTENT)

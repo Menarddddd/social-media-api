@@ -7,11 +7,11 @@ from app.exceptions.exception import (
     FieldNotFoundException,
 )
 from app.models.user import Role, User, UserDeletion
-from app.repositories.user import (
-    get_active_user_by_id_db,
+from app.repositories.admin import (
+    get_user_deletion_by_id_db,
     get_user_deletion_by_user_id_db,
-    get_user_from_user_deletion_id_db,
 )
+from app.repositories.user import get_active_user_by_id_db
 from app.schemas.user import (
     UserDeletionLoadedResponse,
     UserDeletionResponse,
@@ -33,6 +33,7 @@ async def promote_user_to_admin_service(user_id: UUID, db: AsyncSession):
 async def admin_delete_profile_service(
     reason: str, user_id: UUID, admin: User, db: AsyncSession
 ):
+    """Service to delet user by Admin"""
     user = await get_active_user_by_id_db(user_id, db)
     if not user:
         raise FieldNotFoundException("user", str(user_id))
@@ -49,26 +50,24 @@ async def admin_delete_profile_service(
 
 
 async def get_user_deletion_by_user_id_service(user_id: UUID, db: AsyncSession):
-    user = await get_user_deletion_by_user_id_db(user_id, db)
-    if not user:
-        raise FieldNotFoundException("user", str(user_id))
-
-    user_deletion_data = user.user_deletion
+    """Service to get user deletion by user ID"""
+    user_deletion = await get_user_deletion_by_user_id_db(user_id, db)
+    if not user_deletion:
+        raise FieldNotFoundException("user deletion", str(user_id))
 
     return UserDeletionLoadedResponse(
-        user=UserResponse.model_validate(user),
-        user_deletion=UserDeletionResponse.model_validate(user_deletion_data),
+        user=UserResponse.model_validate(user_deletion.user),
+        user_deletion=UserDeletionResponse.model_validate(user_deletion),
     )
 
 
 async def get_user_deletion_by_deletion_id_service(deletion_id: UUID, db: AsyncSession):
-    user_deletion_data = await get_user_from_user_deletion_id_db(deletion_id, db)
-    if not user_deletion_data:
+    """Service to get user deletion by deletion ID"""
+    user_deletion = await get_user_deletion_by_id_db(deletion_id, db)
+    if not user_deletion:
         raise FieldNotFoundException("user deletion", str(deletion_id))
 
-    user = user_deletion_data.user
-
     return UserDeletionLoadedResponse(
-        user=UserResponse.model_validate(user),
-        user_deletion=UserDeletionResponse.model_validate(user_deletion_data),
+        user=UserResponse.model_validate(user_deletion.user),
+        user_deletion=UserDeletionResponse.model_validate(user_deletion),
     )
