@@ -27,10 +27,12 @@ from app.services.comment import (
 router = APIRouter()
 
 
-@router.post("", response_model=CommentResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/{post_id}", response_model=CommentResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_comment(
-    form_data: CommentCreate,
     post_id: UUID,
+    form_data: CommentCreate,
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ):

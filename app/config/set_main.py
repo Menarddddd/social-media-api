@@ -5,10 +5,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from arq import create_pool
 
-from app.core.database import Base, engine, AsyncSessionLocal, get_redis_settings
+from app.core.database import Base, AsyncSessionLocal, get_redis_settings
 from app.core.security import hash_password
 from app.core.settings import settings
-from app import models  # loads model
+from app import models
 
 from app.core.dependency import require_admin
 from app.exceptions.exception import (
@@ -51,7 +51,6 @@ def register_exception_handlers(app: FastAPI):
     app.add_exception_handler(BadRequestException, bad_request_exception_handler)
 
 
-# THIS CREATES ADMIN ACCOUNT IN START UP OF APP IF THERE IS NONE
 async def create_initial_admin(db: AsyncSession):
     result = await db.execute(select(User).where(User.role == Role.ADMIN).limit(1))
     existing_admin = result.scalar_one_or_none()
@@ -72,21 +71,44 @@ async def create_initial_admin(db: AsyncSession):
     await db.commit()
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+def create_lifespan(test_mode: bool = False):
+    """Factory function to create lifespan with optional test configuration."""
 
-    async with AsyncSessionLocal() as db:
-        try:
-            await create_initial_admin(db)
-        except Exception:
-            await db.rollback()
-            raise
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        if test_mode:
+            # In test mode, skip real DB and Redis setup
+            app.state.redis = None
+            yield
+            return
 
-    app.state.redis = await create_pool(get_redis_settings())
+        # Production mode
+        from app.core.database import engine
 
-    yield
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
 
-    await app.state.redis.close()
-    await engine.dispose()
+        async with AsyncSessionLocal() as db:
+            try:
+                await create_initial_admin(db)
+            except Exception:
+                await db.rollback()
+                raise
+
+        app.state.redis = await create_pool(get_redis_settings())
+
+        yield
+
+        await app.state.redis.close()
+        await engine.dispose()
+
+    return lifespan
+
+
+# Default lifespan for production
+lifespan = create_lifespan(test_mode=False)
+
+
+def setup_main(app: FastAPI):
+    register_routers(app)
+    register_exception_handlers(app)
