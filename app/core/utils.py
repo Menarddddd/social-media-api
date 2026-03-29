@@ -2,6 +2,7 @@ import base64
 from datetime import datetime
 from uuid import UUID
 
+from arq import ArqRedis
 from fastapi import HTTPException, status
 from pydantic import ValidationError
 import resend
@@ -69,3 +70,19 @@ async def send_recovery_email(to_email: str, token: str):
     except Exception as e:
         print(f"Failed to send email: {str(e)}")
         raise
+
+
+async def check_rate_limit(
+    redis: ArqRedis, key: str, max_attempts: int, window_seconds: int
+) -> bool:
+    current = await redis.get(key)
+
+    if current is None:
+        await redis.setex(key, window_seconds, 1)
+        return True
+
+    if int(current) >= max_attempts:
+        return False
+
+    await redis.incr(key)
+    return True

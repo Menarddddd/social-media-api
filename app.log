@@ -1,0 +1,8 @@
+2026-03-30 04:07:30,698 - app.services.user - INFO - Login attempt: menardfrancisco
+2026-03-30 04:07:30,698 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-03-30 04:07:30,701 - sqlalchemy.engine.Engine - INFO - SELECT users.id, users.first_name, users.last_name, users.username, users.email, users.password, users.role, users.is_deleted 
+FROM users 
+WHERE users.username = $1::VARCHAR AND users.is_deleted IS false
+2026-03-30 04:07:30,702 - sqlalchemy.engine.Engine - INFO - [generated in 0.00052s] ('menardfrancisco',)
+2026-03-30 04:07:30,780 - app.services.user - INFO - Login successful: menardfrancisco (user_id: bde47f90-d3b5-46ed-8b5b-8992c6cb48c2)
+2026-03-30 04:07:30,782 - sqlalchemy.engine.Engine - INFO - COMMIT

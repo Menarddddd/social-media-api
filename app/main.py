@@ -1,6 +1,10 @@
 from fastapi import FastAPI
 
 from app.config.set_main import lifespan, setup_main, create_lifespan
+from app.core.log import setup_logging
+
+
+setup_logging()
 
 
 def create_app(test_mode: bool = False):
