@@ -27,7 +27,6 @@ class Settings(BaseSettings):
     # Upstash Redis (REST API)
     UPSTASH_REDIS_REST_URL: SecretStr
     UPSTASH_REDIS_REST_TOKEN: SecretStr
-    REDIS_PORT: int
 
     SOFT_DELETE_RETENTION_DAYS: int
 
