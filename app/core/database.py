@@ -1,5 +1,5 @@
 from fastapi import Request
-from arq.connections import RedisSettings
+from upstash_redis import Redis
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy.orm import DeclarativeBase
 
@@ -30,11 +30,11 @@ class Base(DeclarativeBase):
     pass
 
 
-def get_redis_settings():
-    return RedisSettings(
-        host=settings.REDIS_HOST,
-        port=settings.REDIS_PORT,
-        password=settings.REDIS_PASSWORD,
+def get_upstash_redis():
+    """Get Upstash Redis client using REST API."""
+    return Redis(
+        url=settings.UPSTASH_REDIS_REST_URL.get_secret_value(),
+        token=settings.UPSTASH_REDIS_REST_TOKEN.get_secret_value(),
     )
 
 

@@ -1,11 +1,11 @@
+import logging
 from contextlib import asynccontextmanager
-
 from fastapi import Depends, FastAPI
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from arq import create_pool
 
-from app.core.database import Base, AsyncSessionLocal, get_redis_settings
+from app.core.database import Base, AsyncSessionLocal, get_upstash_redis
 from app.core.security import hash_password
 from app.core.settings import settings
 from app import models
@@ -28,9 +28,14 @@ from app.routers.user import router as user_router
 from app.routers.post import router as post_router
 from app.routers.comment import router as comment_router
 from app.routers.admin import router as admin_router
+from app.routers.health import router as health_router
+
+
+logger = logging.getLogger(__name__)
 
 
 def register_routers(app: FastAPI):
+    app.include_router(health_router, prefix="/health", include_in_schema=False)
     app.include_router(user_router, prefix="/api/users", tags=["users"])
     app.include_router(post_router, prefix="/api/posts", tags=["posts"])
     app.include_router(comment_router, prefix="/api/comments", tags=["comments"])
@@ -77,12 +82,10 @@ def create_lifespan(test_mode: bool = False):
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         if test_mode:
-            # In test mode, skip real DB and Redis setup
             app.state.redis = None
             yield
             return
 
-        # Production mode
         from app.core.database import engine
 
         async with engine.begin() as conn:
@@ -95,11 +98,16 @@ def create_lifespan(test_mode: bool = False):
                 await db.rollback()
                 raise
 
-        app.state.redis = await create_pool(get_redis_settings())
+        # Use Upstash REST client
+        try:
+            app.state.redis = get_upstash_redis()
+            logger.info("Redis connected (Upstash REST)")
+        except Exception as e:
+            logger.warning(f"Redis not available: {e}")
+            app.state.redis = None
 
         yield
 
-        await app.state.redis.close()
         await engine.dispose()
 
     return lifespan

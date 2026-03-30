@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     DATABASE_URL: SecretStr
     DATABASE_USER: SecretStr
     DATABASE_PASSWORD: SecretStr
+    DATABASE_NAME: str
 
     ACCESS_SECRET_KEY: SecretStr
     ACCESS_MINUTES_EXPIRE: int
@@ -23,9 +24,11 @@ class Settings(BaseSettings):
     ADMIN_EMAIL: str
     ADMIN_PASSWORD: str
 
-    REDIS_HOST: str
+    # Upstash Redis (REST API)
+    UPSTASH_REDIS_REST_URL: SecretStr
+    UPSTASH_REDIS_REST_TOKEN: SecretStr
     REDIS_PORT: int
-    REDIS_PASSWORD: str
+
     SOFT_DELETE_RETENTION_DAYS: int
 
     RESEND_API_KEY: SecretStr
