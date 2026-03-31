@@ -73,6 +73,8 @@ async def login_service(
 ) -> dict:
     """Handles login and gives access/refresh token"""
 
+    username = username.lower()
+
     logger.info(f"Login attempt: {username}")
 
     user = await get_active_user_by_username_db(username, db)
