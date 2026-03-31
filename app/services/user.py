@@ -66,7 +66,6 @@ from app.schemas.user import (
 logger = logging.getLogger(__name__)
 
 UPDATE_USER_ALLOWED = {"first_name", "last_name", "username", "email"}
-resend.api_key = settings.RESEND_API_KEY.get_secret_value()
 
 
 async def login_service(
@@ -416,7 +415,7 @@ async def account_recovery_service(email: str, db: AsyncSession):
 
     token = await generate_recovery_token(user.id, db)
 
-    # Send email in background (non-blocking)
+    # Send email in background
     asyncio.create_task(_send_recovery_email_task(user.email, token, user.username))
 
     return msg

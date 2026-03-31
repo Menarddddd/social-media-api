@@ -9,7 +9,6 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.settings import settings
-from app.exceptions.exception import CredentialsException
 from app.models.account_recovery import AccountRecoveryToken
 from app.repositories.recovery_token import (
     get_user_from_recovery_token,

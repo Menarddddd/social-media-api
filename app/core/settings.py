@@ -40,9 +40,10 @@ class Settings(BaseSettings):
 
     SOFT_DELETE_RETENTION_DAYS: int
 
-    RESEND_API_KEY: SecretStr
-    RECOVERY_SECRET_KEY: SecretStr
+    GMAIL_USERNAME: str
+    GMAIL_PASSWORD: SecretStr
     RECOVERY_MINUTES: int
+    RECOVERY_SECRET_KEY: SecretStr
 
 
 settings = Settings()  # type: ignore LOAD FROM ENV FILE

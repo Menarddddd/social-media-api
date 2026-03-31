@@ -1,13 +1,14 @@
+from email.message import EmailMessage
+
+import aiosmtplib
 import base64
 from collections import defaultdict
 from datetime import datetime, timedelta
 import logging
 from uuid import UUID
 
-from arq import ArqRedis
 from fastapi import HTTPException, status
 from pydantic import ValidationError
-import resend
 
 from app.core.settings import settings
 from app.schemas.cursor import CursorPayload
@@ -53,38 +54,71 @@ def decode_cursor(cursor: str):
         )
 
 
-async def send_recovery_email(to_email: str, token: str):
+async def send_recovery_email(to_email: str, token: str, username: str = "User"):
+    """Send password recovery email via Gmail SMTP."""
     try:
-        resend.Emails.send(
-            {
-                "from": "SocialMediaApp <onboarding@resend.dev>",
-                "to": [to_email],
-                "subject": "Password Recovery",
-                "html": f"""
-            <h2>Account Recovery</h2>
-            <p>You requested for account recovery.</p>
+        message = EmailMessage()
+        message["From"] = f"SocialMediaApp <{settings.GMAIL_USERNAME}>"
+        message["To"] = to_email
+        message["Subject"] = "Password Recovery - SocialMediaApp"
 
-            <p><b>Your recovery token: </b></p>
-            <code style="font-size:16px;">{token}</code>
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h2 style="color: #4CAF50;">Account Recovery</h2>
+                <p>Hi <strong>{username}</strong>,</p>
+                <p>You requested to recover your account password.</p>
+                
+                <div style="background-color: #f4f4f4; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                    <p style="margin: 0;"><strong>Your recovery token:</strong></p>
+                    <code style="font-size: 18px; color: #4CAF50; font-weight: bold;">{token}</code>
+                </div>
+                
+                <p>⏰ This token will expire in <strong>{settings.RECOVERY_MINUTES} minutes</strong>.</p>
+                
+                <p>To reset your password, use this token in the password reset form.</p>
+                
+                <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+                
+                <p style="color: #999; font-size: 12px;">
+                    If you did not request this, please ignore this email. Your password will remain unchanged.
+                </p>
+                
+                <p style="color: #999; font-size: 12px;">
+                    This is an automated message from SocialMediaApp. Please do not reply to this email.
+                </p>
+            </div>
+        </body>
+        </html>
+        """
 
-            <p>This token will expire in {settings.RECOVERY_MINUTES} minutes.</p>
+        message.set_content(html_content, subtype="html")
 
-            <p>If you did not make this request, ignore this email.</p>
-            """,
-            }
+        # Send email
+        await aiosmtplib.send(
+            message,
+            hostname="smtp.gmail.com",
+            port=587,
+            start_tls=True,
+            username=settings.GMAIL_USERNAME,
+            password=settings.GMAIL_PASSWORD.get_secret_value(),
         )
+
+        logger.info(f"Recovery email sent to {to_email}")
+
     except Exception as e:
-        print(f"Failed to send email: {str(e)}")
+        logger.error(f"Failed to send recovery email to {to_email}: {str(e)}")
         raise
 
 
 async def _send_recovery_email_task(email: str, token: str, username: str):
-    """Background task to send recovery email."""
+    """Background task wrapper for sending recovery email."""
     try:
-        await send_recovery_email(email, token)
-        logger.info(f"Recovery email sent to: {username}")
+        await send_recovery_email(email, token, username)
     except Exception as e:
-        logger.error(f"Failed to send recovery email to {username}: {e}")
+        logger.error(f"Background email task failed: {str(e)}")
 
 
 # Using asyncio right now so currently not in use
