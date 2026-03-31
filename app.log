@@ -2786,3 +2786,151 @@ WHERE users.email = $1::VARCHAR
 2026-03-31 23:36:17,192 - sqlalchemy.engine.Engine - INFO - [generated in 0.00103s] (UUID('26b17347-9df2-4cd1-bac4-ee3ba0e67ca2'), UUID('cb6d6a43-6c4b-4a50-9987-b52137d9f826'), '5f652ec2de108de73645514bbc63db9fdbd439babdf041be74386ecc5edef5bb', datetime.datetime(2026, 3, 31, 16, 6, 17, 177512, tzinfo=datetime.timezone.utc), False)
 2026-03-31 23:36:17,213 - sqlalchemy.engine.Engine - INFO - COMMIT
 2026-03-31 23:36:21,486 - app.core.utils - INFO - Recovery email sent to annalynacero75@gmail.com
+2026-04-01 00:00:18,821 - sqlalchemy.engine.Engine - INFO - select pg_catalog.version()
+2026-04-01 00:00:18,821 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2026-04-01 00:00:18,855 - sqlalchemy.engine.Engine - INFO - select current_schema()
+2026-04-01 00:00:18,855 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2026-04-01 00:00:18,864 - sqlalchemy.engine.Engine - INFO - show standard_conforming_strings
+2026-04-01 00:00:18,866 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2026-04-01 00:00:18,869 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-04-01 00:00:18,888 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-04-01 00:00:18,888 - sqlalchemy.engine.Engine - INFO - [generated in 0.00085s] ('user_deletions', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-04-01 00:00:18,912 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-04-01 00:00:18,913 - sqlalchemy.engine.Engine - INFO - [cached since 0.02324s ago] ('users', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-04-01 00:00:18,917 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-04-01 00:00:18,917 - sqlalchemy.engine.Engine - INFO - [cached since 0.02851s ago] ('posts', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-04-01 00:00:18,917 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-04-01 00:00:18,922 - sqlalchemy.engine.Engine - INFO - [cached since 0.03259s ago] ('comments', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-04-01 00:00:18,925 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-04-01 00:00:18,926 - sqlalchemy.engine.Engine - INFO - [cached since 0.03698s ago] ('refresh_tokens', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-04-01 00:00:18,930 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-04-01 00:00:18,930 - sqlalchemy.engine.Engine - INFO - [cached since 0.04168s ago] ('account_recovery_token', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-04-01 00:00:18,936 - sqlalchemy.engine.Engine - INFO - COMMIT
+2026-04-01 00:00:18,938 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-04-01 00:00:18,960 - sqlalchemy.engine.Engine - INFO - SELECT users.id, users.first_name, users.last_name, users.username, users.email, users.password, users.role, users.is_deleted 
+FROM users 
+WHERE users.role = $1::VARCHAR 
+ LIMIT $2::INTEGER
+2026-04-01 00:00:18,960 - sqlalchemy.engine.Engine - INFO - [generated in 0.00117s] ('admin', 1)
+2026-04-01 00:00:18,977 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-04-01 00:00:18,979 - app.config.set_main - INFO - App started (using asyncio for background tasks)
+2026-04-01 00:00:45,708 - app.services.user - INFO - Login attempt: menardfrancisco
+2026-04-01 00:00:45,709 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-04-01 00:00:45,713 - sqlalchemy.engine.Engine - INFO - SELECT users.id, users.first_name, users.last_name, users.username, users.email, users.password, users.role, users.is_deleted 
+FROM users 
+WHERE users.username = $1::VARCHAR AND users.is_deleted IS false
+2026-04-01 00:00:45,713 - sqlalchemy.engine.Engine - INFO - [generated in 0.00090s] ('menardfrancisco',)
+2026-04-01 00:00:45,878 - app.services.user - WARNING - Login failed - invalid password: menardfrancisco
+2026-04-01 00:00:45,878 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-04-01 00:01:15,092 - app.services.user - INFO - Creating user: strings
+2026-04-01 00:01:15,331 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-04-01 00:01:15,340 - sqlalchemy.engine.Engine - INFO - INSERT INTO users (id, first_name, last_name, username, email, password, role, is_deleted) VALUES ($1::UUID, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::VARCHAR, $8::BOOLEAN)
+2026-04-01 00:01:15,355 - sqlalchemy.engine.Engine - INFO - [generated in 0.01493s] (UUID('2cce4d31-0c43-4786-8677-5f9fa93240c4'), 'String', 'String', 'strings', 'menardddddd@gmail.com', '$argon2id$v=19$m=65536,t=3,p=4$Q6w49JWN759SsHwumfk3VA$dGRDJSiI6gVFi8yX2f1fDF1peZFsUX5iuH1yP3dvHWg', 'user', False)
+2026-04-01 00:01:15,421 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-04-01 00:01:15,429 - app.services.user - WARNING - Duplicate user attempt: username=strings, email=menardddddd@gmail.com
+2026-04-01 00:01:29,902 - app.services.user - INFO - Login attempt: izukumidoriya
+2026-04-01 00:01:29,904 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-04-01 00:01:29,905 - sqlalchemy.engine.Engine - INFO - SELECT users.id, users.first_name, users.last_name, users.username, users.email, users.password, users.role, users.is_deleted 
+FROM users 
+WHERE users.username = $1::VARCHAR AND users.is_deleted IS false
+2026-04-01 00:01:29,907 - sqlalchemy.engine.Engine - INFO - [cached since 44.19s ago] ('izukumidoriya',)
+2026-04-01 00:01:29,931 - sqlalchemy.engine.Engine - INFO - SELECT users.id, users.first_name, users.last_name, users.username, users.email, users.password, users.role, users.is_deleted 
+FROM users 
+WHERE users.username = $1::VARCHAR AND users.is_deleted IS true
+2026-04-01 00:01:29,931 - sqlalchemy.engine.Engine - INFO - [generated in 0.00141s] ('izukumidoriya',)
+2026-04-01 00:01:29,941 - app.services.user - WARNING - Login failed - user not found: izukumidoriya
+2026-04-01 00:01:29,941 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-04-01 00:01:31,695 - app.services.user - INFO - Login attempt: izukumidoriya
+2026-04-01 00:01:31,695 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-04-01 00:01:31,695 - sqlalchemy.engine.Engine - INFO - SELECT users.id, users.first_name, users.last_name, users.username, users.email, users.password, users.role, users.is_deleted 
+FROM users 
+WHERE users.username = $1::VARCHAR AND users.is_deleted IS false
+2026-04-01 00:01:31,699 - sqlalchemy.engine.Engine - INFO - [cached since 45.99s ago] ('izukumidoriya',)
+2026-04-01 00:01:31,706 - sqlalchemy.engine.Engine - INFO - SELECT users.id, users.first_name, users.last_name, users.username, users.email, users.password, users.role, users.is_deleted 
+FROM users 
+WHERE users.username = $1::VARCHAR AND users.is_deleted IS true
+2026-04-01 00:01:31,708 - sqlalchemy.engine.Engine - INFO - [cached since 1.778s ago] ('izukumidoriya',)
+2026-04-01 00:01:31,728 - app.services.user - WARNING - Login failed - user not found: izukumidoriya
+2026-04-01 00:01:31,737 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-04-01 00:02:12,920 - app.services.user - INFO - Login attempt: testtest
+2026-04-01 00:02:12,922 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-04-01 00:02:12,923 - sqlalchemy.engine.Engine - INFO - SELECT users.id, users.first_name, users.last_name, users.username, users.email, users.password, users.role, users.is_deleted 
+FROM users 
+WHERE users.username = $1::VARCHAR AND users.is_deleted IS false
+2026-04-01 00:02:12,925 - sqlalchemy.engine.Engine - INFO - [cached since 87.21s ago] ('testtest',)
+2026-04-01 00:02:12,935 - sqlalchemy.engine.Engine - INFO - SELECT users.id, users.first_name, users.last_name, users.username, users.email, users.password, users.role, users.is_deleted 
+FROM users 
+WHERE users.username = $1::VARCHAR AND users.is_deleted IS true
+2026-04-01 00:02:12,946 - sqlalchemy.engine.Engine - INFO - [cached since 43.02s ago] ('testtest',)
+2026-04-01 00:02:12,953 - app.services.user - WARNING - Login failed - user not found: testtest
+2026-04-01 00:02:12,955 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-04-01 00:02:18,587 - app.services.user - INFO - Login attempt: testtest
+2026-04-01 00:02:18,588 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-04-01 00:02:18,590 - sqlalchemy.engine.Engine - INFO - SELECT users.id, users.first_name, users.last_name, users.username, users.email, users.password, users.role, users.is_deleted 
+FROM users 
+WHERE users.username = $1::VARCHAR AND users.is_deleted IS false
+2026-04-01 00:02:18,590 - sqlalchemy.engine.Engine - INFO - [cached since 92.88s ago] ('testtest',)
+2026-04-01 00:02:18,598 - sqlalchemy.engine.Engine - INFO - SELECT users.id, users.first_name, users.last_name, users.username, users.email, users.password, users.role, users.is_deleted 
+FROM users 
+WHERE users.username = $1::VARCHAR AND users.is_deleted IS true
+2026-04-01 00:02:18,598 - sqlalchemy.engine.Engine - INFO - [cached since 48.67s ago] ('testtest',)
+2026-04-01 00:02:18,604 - app.services.user - WARNING - Login failed - user not found: testtest
+2026-04-01 00:02:18,610 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-04-01 00:17:42,404 - sqlalchemy.engine.Engine - INFO - select pg_catalog.version()
+2026-04-01 00:17:42,404 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2026-04-01 00:17:42,424 - sqlalchemy.engine.Engine - INFO - select current_schema()
+2026-04-01 00:17:42,424 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2026-04-01 00:17:42,441 - sqlalchemy.engine.Engine - INFO - show standard_conforming_strings
+2026-04-01 00:17:42,443 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2026-04-01 00:17:42,445 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-04-01 00:17:42,457 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-04-01 00:17:42,457 - sqlalchemy.engine.Engine - INFO - [generated in 0.00102s] ('user_deletions', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-04-01 00:17:42,502 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-04-01 00:17:42,502 - sqlalchemy.engine.Engine - INFO - [cached since 0.04193s ago] ('users', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-04-01 00:17:42,506 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-04-01 00:17:42,506 - sqlalchemy.engine.Engine - INFO - [cached since 0.04511s ago] ('posts', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-04-01 00:17:42,506 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-04-01 00:17:42,506 - sqlalchemy.engine.Engine - INFO - [cached since 0.0482s ago] ('comments', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-04-01 00:17:42,514 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-04-01 00:17:42,514 - sqlalchemy.engine.Engine - INFO - [cached since 0.05187s ago] ('refresh_tokens', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-04-01 00:17:42,517 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-04-01 00:17:42,517 - sqlalchemy.engine.Engine - INFO - [cached since 0.05526s ago] ('account_recovery_token', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-04-01 00:17:42,521 - sqlalchemy.engine.Engine - INFO - COMMIT
+2026-04-01 00:17:42,525 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-04-01 00:17:42,612 - sqlalchemy.engine.Engine - INFO - SELECT users.id, users.first_name, users.last_name, users.username, users.email, users.password, users.role, users.is_deleted 
+FROM users 
+WHERE users.role = $1::VARCHAR 
+ LIMIT $2::INTEGER
+2026-04-01 00:17:42,613 - sqlalchemy.engine.Engine - INFO - [generated in 0.00088s] ('admin', 1)
+2026-04-01 00:17:42,652 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-04-01 00:17:42,658 - app.config.set_main - INFO - App started (using asyncio for background tasks)
+2026-04-01 00:18:04,371 - app.services.user - INFO - Creating user: strings
+2026-04-01 00:18:04,627 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-04-01 00:18:04,637 - sqlalchemy.engine.Engine - INFO - INSERT INTO users (id, first_name, last_name, username, email, password, role, is_deleted) VALUES ($1::UUID, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::VARCHAR, $8::BOOLEAN)
+2026-04-01 00:18:04,637 - sqlalchemy.engine.Engine - INFO - [generated in 0.00202s] (UUID('a5198f36-6dad-4833-b753-2651215bdafe'), 'String', 'String', 'strings', 'menardddddd@gmail.com', '$argon2id$v=19$m=65536,t=3,p=4$/DJR34/eceJI3ShM7tuAWQ$aiU632DKgzA3DxJ11OaGaxsYrLg0+DnTFxf1VAsOXwk', 'user', False)
+2026-04-01 00:18:04,678 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-04-01 00:18:04,684 - app.services.user - WARNING - Duplicate user attempt: username=strings, email=menardddddd@gmail.com

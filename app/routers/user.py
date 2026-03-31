@@ -4,7 +4,6 @@ from uuid import UUID
 from fastapi import Depends, Query, Request, status
 from fastapi.routing import APIRouter
 from fastapi.security import OAuth2PasswordRequestForm
-from arq.connections import ArqRedis
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -30,6 +29,7 @@ from app.services.user import (
     login_service,
     my_activities_service,
     refresh_token_service,
+    reset_forgot_password_service,
     reset_password_service,
     update_profile_service,
 )
@@ -126,6 +126,16 @@ async def account_recovery(
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
     return await account_recovery_service(form_data.email, db)
+
+
+@router.post("/reset-forgot-password", status_code=status.HTTP_200_OK)
+async def reset_forgot_password(
+    form_data: RecoveryComplete,
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    return await reset_forgot_password_service(
+        form_data.token, form_data.new_password, db
+    )
 
 
 @router.post("/reset-password", status_code=status.HTTP_200_OK)

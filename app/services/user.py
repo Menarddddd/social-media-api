@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import resend
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
@@ -394,10 +393,10 @@ async def refresh_token_service(
 
 
 async def account_recovery_service(email: str, db: AsyncSession):
-    """Send recovery token to user email."""
-    logger.info("Account recovery attempt")
+    """Send recovery token to user email (works for active and deleted accounts)."""
+    logger.info(f"Account recovery attempt for: {email}")
 
-    # Rate limit (in-memory, no Redis needed)
+    # Rate limit check
     is_allowed = check_rate_limit_memory(email.lower())
 
     if not is_allowed:
@@ -405,49 +404,104 @@ async def account_recovery_service(email: str, db: AsyncSession):
         raise BadRequestException("Too many recovery attempts. Please try again later.")
 
     msg = {
-        "message": "If the email exists, a recovery token was sent. You need to put it in /reset password"
+        "message": "If the email exists, a recovery token was sent. Check your email."
     }
 
+    # Get user
     user = await get_user_by_email_db(email, db)
+
     if not user:
-        logger.info("Account recovery - email not found")
+        logger.info(f"Account recovery - email not found: {email}")
         return msg
 
+    # Generate token
     token = await generate_recovery_token(user.id, db)
 
     # Send email in background
     asyncio.create_task(_send_recovery_email_task(user.email, token, user.username))
 
+    logger.info(f"Recovery email sent to: {email} (deleted={user.is_deleted})")
+
     return msg
 
 
-async def reset_password_service(token: str, new_password: str, db: AsyncSession):
-    """User can change their password once they have a token"""
-
-    logger.info("Password reset attempt")
+async def reset_forgot_password_service(
+    token: str, new_password: str, db: AsyncSession
+):
+    """User can change their forgotten password once they have a token."""
+    logger.info("Password reset attempt for forgot password")
 
     user_id = await verify_recovery_token(token, db)
     if not user_id:
         logger.warning("Password reset failed - invalid recovery token")
         raise CredentialsException("Invalid recovery token")
 
-    user_deletion = await get_user_deletion_by_user_id_db(user_id, db)
-    if not user_deletion:
-        logger.warning(f"Password reset failed - account past recovery period")
+    user = await get_active_user_by_id_db(user_id, db)
+    if not user:
+        raise CredentialsException("Invalid token or user not found")
+
+    if user.is_deleted:
         raise BadRequestException(
-            "Your account cannot be recovered since it's already past 30 days"
+            "This account is deleted. Use account recovery instead."
         )
 
-    await delete_user_deletion_by_username_db(user_deletion.user.username, db)
+    user.password = hash_password(new_password)
+
+    await mark_token_used(hash_recovery_token(token), db)
+
+    logger.info(f"✅ Password changed successfully: {user.username}")
+
+    return {
+        "message": "You've successfully changed your password. You can now login with it."
+    }
+
+
+async def reset_password_service(token: str, new_password: str, db: AsyncSession):
+    """User can recover their deleted account and set a new password."""
+
+    logger.info("Password reset attempt for account recovery")
+
+    user_id = await verify_recovery_token(token, db)
+    if not user_id:
+        logger.warning("Password reset failed - invalid recovery token")
+        raise CredentialsException("Invalid recovery token")
+
+    # Get the deletion record
+    user_deletion = await get_user_deletion_by_user_id_db(user_id, db)
+    if not user_deletion:
+        logger.warning(
+            f"Password reset failed - account past recovery period or not deleted"
+        )
+        raise BadRequestException(
+            "Your account cannot be recovered. It may be past the 30-day recovery period or was not deleted."
+        )
+
+    # Check if past recovery period (30 days)
+    deletion_age = datetime.now(timezone.utc) - user_deletion.deleted_at
+    if deletion_age.days > settings.SOFT_DELETE_RETENTION_DAYS:
+        logger.warning(
+            f"Account recovery failed - past {settings.SOFT_DELETE_RETENTION_DAYS} day limit"
+        )
+        raise BadRequestException(
+            f"Your account cannot be recovered since it's past the {settings.SOFT_DELETE_RETENTION_DAYS}-day recovery period."
+        )
 
     user = user_deletion.user
 
+    if not user.is_deleted:
+        raise BadRequestException("This account is not deleted.")
+
     user.password = hash_password(new_password)
     user.is_deleted = False
+
+    await db.delete(user_deletion)
+
     await mark_token_used(hash_recovery_token(token), db)
+
+    await db.commit()
 
     logger.info(f"Account recovered successfully: {user.username}")
 
     return {
-        "message": "You've successfully recovered your account, you can now login with it."
+        "message": "You've successfully recovered your account. You can now login with it."
     }
