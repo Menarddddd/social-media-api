@@ -3,9 +3,11 @@ from contextlib import asynccontextmanager
 from fastapi import Depends, FastAPI
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from arq import create_pool
 
-from app.core.database import Base, AsyncSessionLocal, get_upstash_redis
+from app.core.database import (
+    Base,
+    AsyncSessionLocal,
+)
 from app.core.security import hash_password
 from app.core.settings import settings
 from app import models
@@ -77,8 +79,6 @@ async def create_initial_admin(db: AsyncSession):
 
 
 def create_lifespan(test_mode: bool = False):
-    """Factory function to create lifespan with optional test configuration."""
-
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         if test_mode:
@@ -98,13 +98,8 @@ def create_lifespan(test_mode: bool = False):
                 await db.rollback()
                 raise
 
-        # Use Upstash REST client
-        try:
-            app.state.redis = get_upstash_redis()
-            logger.info("Redis connected (Upstash REST)")
-        except Exception as e:
-            logger.warning(f"Redis not available: {e}")
-            app.state.redis = None
+        app.state.redis = None
+        logger.info("App started (using asyncio for background tasks)")
 
         yield
 

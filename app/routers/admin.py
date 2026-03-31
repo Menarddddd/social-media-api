@@ -22,6 +22,7 @@ from app.schemas.user import (
 )
 from app.services.admin import (
     admin_delete_profile_service,
+    cleanup_expired_users_service,
     get_user_deletion_by_deletion_id_service,
     get_user_deletion_by_user_id_service,
     promote_user_to_admin_service,
@@ -41,6 +42,7 @@ async def get_all_admins(
     limit: Annotated[int, Query(ge=1, le=50)] = 10,
     page: Annotated[int, Query(ge=1)] = 1,
 ):
+    """Returns all active admins"""
     return await get_active_admins_db(db, limit, (page - 1) * page)
 
 
@@ -48,6 +50,7 @@ async def get_all_admins(
 async def promote_user_to_admin(
     user_id: UUID, db: Annotated[AsyncSession, Depends(get_db)]
 ):
+    """Promote a user to an admin"""
     return await promote_user_to_admin_service(user_id, db)
 
 
@@ -57,6 +60,7 @@ async def get_users(
     limit: Annotated[int, Query(ge=1, le=50)] = 10,
     page: Annotated[int, Query(ge=1)] = 1,
 ):
+    """Fetch all the users"""
     return await get_all_active_users_db(db, limit, (page - 1) * limit)  # offset
 
 
@@ -70,6 +74,7 @@ async def get_users_deletions(
     limit: Annotated[int, Query(ge=1, le=50)] = 10,
     page: Annotated[int, Query(ge=1)] = 1,
 ):
+    """Get all user deletions"""
     return await get_users_deletions_db(db, limit, (page - 1) * limit)
 
 
@@ -81,6 +86,7 @@ async def get_users_deletions(
 async def get_user_deletion_by_id(
     deletion_id: UUID, db: Annotated[AsyncSession, Depends(get_db)]
 ):
+    """Get a user deletion"""
     return await get_user_deletion_by_deletion_id_service(deletion_id, db)
 
 
@@ -92,6 +98,7 @@ async def get_user_deletion_by_id(
 async def get_user_deletion_by_user_id(
     user_id: UUID, db: Annotated[AsyncSession, Depends(get_db)]
 ):
+    """Get a user deletion"""
     return await get_user_deletion_by_user_id_service(user_id, db)
 
 
@@ -102,6 +109,7 @@ async def delete_user(
     admin: Annotated[User, Depends(require_admin)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
+    """Manually delete a user"""
     await admin_delete_profile_service(form_data.reason, user_id, admin, db)
 
 
@@ -117,8 +125,10 @@ async def delete_comment(
     await admin_delete_comment_service(comment_id, db)
 
 
-@router.delete("/hard-delete", status_code=status.HTTP_204_NO_CONTENT)
-async def hard_delete_user(user_id: UUID, db: Annotated[AsyncSession, Depends(get_db)]):
-    user = await get_active_admin_by_id_db(user_id, db)
-
-    await db.delete(user)
+@router.delete("/cleanup", status_code=status.HTTP_200_OK)
+async def cleanup_expired_users(
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    """Hard delete users whose soft-delete retention period has expired."""
+    deleted_count = await cleanup_expired_users_service(db)
+    return {"message": f"Cleaned up {deleted_count} expired users"}

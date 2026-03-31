@@ -1,5 +1,7 @@
 import base64
-from datetime import datetime
+from collections import defaultdict
+from datetime import datetime, timedelta
+import logging
 from uuid import UUID
 
 from arq import ArqRedis
@@ -9,6 +11,10 @@ import resend
 
 from app.core.settings import settings
 from app.schemas.cursor import CursorPayload
+
+
+_recovery_attempts: dict[str, list[datetime]] = defaultdict(list)
+logger = logging.getLogger(__name__)
 
 
 # clean user info
@@ -72,17 +78,49 @@ async def send_recovery_email(to_email: str, token: str):
         raise
 
 
-async def check_rate_limit(
-    redis: ArqRedis, key: str, max_attempts: int, window_seconds: int
-) -> bool:
-    current = await redis.get(key)
+async def _send_recovery_email_task(email: str, token: str, username: str):
+    """Background task to send recovery email."""
+    try:
+        await send_recovery_email(email, token)
+        logger.info(f"Recovery email sent to: {username}")
+    except Exception as e:
+        logger.error(f"Failed to send recovery email to {username}: {e}")
 
-    if current is None:
-        await redis.setex(key, window_seconds, 1)
-        return True
 
-    if int(current) >= max_attempts:
+# Using asyncio right now so currently not in use
+# async def check_rate_limit(
+#     redis: ArqRedis, key: str, max_attempts: int, window_seconds: int
+# ):
+#     current = await redis.get(key)
+
+#     if current is None:
+#         await redis.setex(key, window_seconds, 1)
+#         return True
+
+#     if int(current) >= max_attempts:
+#         return False
+
+#     await redis.incr(key)
+#     return True
+
+
+# Current in use
+def check_rate_limit_memory(
+    email: str, max_attempts: int = 3, window_seconds: int = 900
+):
+    """Rate limiter"""
+    now = datetime.now()
+    window_start = now - timedelta(seconds=window_seconds)
+
+    # Clean old attempts
+    _recovery_attempts[email] = [
+        t for t in _recovery_attempts[email] if t > window_start
+    ]
+
+    # Check limit
+    if len(_recovery_attempts[email]) >= max_attempts:
         return False
 
-    await redis.incr(key)
+    # Record attempt
+    _recovery_attempts[email].append(now)
     return True

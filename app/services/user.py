@@ -1,5 +1,5 @@
+import asyncio
 import logging
-from arq import ArqRedis
 import resend
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
@@ -23,7 +23,8 @@ from app.core.security import (
     verify_token,
 )
 from app.core.utils import (
-    check_rate_limit,
+    _send_recovery_email_task,
+    check_rate_limit_memory,
     decode_cursor,
     encode_cursor,
     parse_user_info,
@@ -393,14 +394,12 @@ async def refresh_token_service(
     }
 
 
-async def account_recovery_service(email: str, db: AsyncSession, redis: ArqRedis):
-    """This route will send a token to user email in order to recover the account"""
-
+async def account_recovery_service(email: str, db: AsyncSession):
+    """Send recovery token to user email."""
     logger.info("Account recovery attempt")
 
-    is_allowed = await check_rate_limit(
-        redis=redis, key=f"recovery:{email.lower()}", max_attempts=3, window_seconds=900
-    )
+    # Rate limit (in-memory, no Redis needed)
+    is_allowed = check_rate_limit_memory(email.lower())
 
     if not is_allowed:
         logger.warning(f"Account recovery rate limited: {email}")
@@ -417,9 +416,8 @@ async def account_recovery_service(email: str, db: AsyncSession, redis: ArqRedis
 
     token = await generate_recovery_token(user.id, db)
 
-    await redis.enqueue_job("send_recovery_email_task", user.email, token)
-
-    logger.info(f"Recovery email queued for user: {user.username}")
+    # Send email in background (non-blocking)
+    asyncio.create_task(_send_recovery_email_task(user.email, token, user.username))
 
     return msg
 

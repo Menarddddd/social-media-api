@@ -7,7 +7,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from arq.connections import ArqRedis
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db, get_redis
+from app.core.database import get_db
 from app.core.dependency import get_current_user
 from app.models.user import User
 from app.schemas.user import (
@@ -124,9 +124,8 @@ async def delete_profile(
 async def account_recovery(
     form_data: RecoveryRequest,
     db: Annotated[AsyncSession, Depends(get_db)],
-    redis: Annotated[ArqRedis, Depends(get_redis)],
 ):
-    return await account_recovery_service(form_data.email, db, redis)
+    return await account_recovery_service(form_data.email, db)
 
 
 @router.post("/reset-password", status_code=status.HTTP_200_OK)

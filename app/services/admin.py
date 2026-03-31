@@ -3,6 +3,7 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.settings import settings
 from app.exceptions.exception import FieldNotFoundException
 from app.models.user import Role, User, UserDeletion
 from app.repositories.admin import (
@@ -98,3 +99,30 @@ async def get_user_deletion_by_deletion_id_service(deletion_id: UUID, db: AsyncS
         user=UserResponse.model_validate(user_deletion.user),
         user_deletion=UserDeletionResponse.model_validate(user_deletion),
     )
+
+
+async def cleanup_expired_users_service(db: AsyncSession) -> int:
+    """Hard delete users past retention period."""
+    from datetime import datetime, timedelta, timezone
+    from sqlalchemy import delete, select
+
+    logger.info("Starting expired user cleanup")
+
+    cutoff_date = datetime.now(timezone.utc) - timedelta(
+        days=settings.SOFT_DELETE_RETENTION_DAYS
+    )
+
+    subquery = select(UserDeletion.user_id).where(UserDeletion.deleted_at < cutoff_date)
+
+    stmt = (
+        delete(User)
+        .where(User.id.in_(subquery), User.is_deleted.is_(True))
+        .returning(User.id)
+    )
+
+    result = await db.execute(stmt)
+    deleted_count = sum(1 for _ in result.scalars())
+
+    logger.info(f"Hard deleted {deleted_count} expired users")
+
+    return deleted_count

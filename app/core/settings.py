@@ -1,6 +1,20 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import SecretStr
 
+"""
+ARQ Worker Configuration
+
+This worker uses ARQ with Redis for background task processing.
+Currently using asyncio.create_task() for deployment simplicity.
+To enable ARQ worker, configure Redis and run:
+
+    arq app.worker.settings.WorkerSettings
+
+Requires:
+    - Redis instance (local or cloud)
+    - REDIS_HOST, REDIS_PORT, REDIS_PASSWORD in .env
+"""
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="UTF-8")
@@ -23,10 +37,6 @@ class Settings(BaseSettings):
     ADMIN_USERNAME: str
     ADMIN_EMAIL: str
     ADMIN_PASSWORD: str
-
-    # Upstash Redis (REST API)
-    UPSTASH_REDIS_REST_URL: SecretStr
-    UPSTASH_REDIS_REST_TOKEN: SecretStr
 
     SOFT_DELETE_RETENTION_DAYS: int
 
